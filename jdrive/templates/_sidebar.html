@@ -15,10 +15,17 @@
     </button>
   </div>
   <div class="sidebar-menu" id="side-nav">
+    <form class="side-search" method="get" action="{{ url_for('find.search') }}" role="search">
+      <label class="visually-hidden" for="side-search">Search your files</label>
+      {{ icon('search', 16) }}
+      <input id="side-search" type="search" name="q" placeholder="Search" value="{{ request.args.get('q', '') if request.endpoint == 'find.search' else '' }}">
+    </form>
     <nav aria-label="Main">
       <ul class="side-links">
         {{ link('drive.home', 'My Drive', 'drive', active=(menu_here or page) in ('drive.home', 'my-drive')) }}
         {{ link('share.shared_with_me', 'Shared With Me', 'people', active=menu_here == 'shared') }}
+        {{ link('find.recent', 'Recent', 'clock', active=menu_here == 'recent') }}
+        {{ link('find.starred', 'Starred', 'star', active=menu_here == 'starred') }}
         {{ link('drive.trash_page', 'Trash', 'trash', active=menu_here == 'trash') }}
       </ul>
       {# How much space the files take: every version and the Trash count. #}

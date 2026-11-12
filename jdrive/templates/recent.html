@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_items.html" import access_list with context %}
+{% block title %}Recent - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Recent</h1><p class="lead">What you opened or added lately.</p></div></div>
+  {% if rows %}
+    {{ access_list(rows|map(attribute=0)|list, when=rows|map(attribute=1)|list, when_label='Opened') }}
+  {% else %}
+    <div class="empty-state">{{ icon('clock', 56) }}<h2>Nothing Yet</h2><p>Files and folders you open show here.</p></div>
+  {% endif %}
+{% endblock %}

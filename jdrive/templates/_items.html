@@ -2,15 +2,32 @@
 {% from "_icons.html" import icon %}
 {% from "_macros.html" import csrf %}
 
+{# A star by a title: a small form, so it works without JavaScript. #}
+{% macro star_button(item, on) %}
+  <form method="post" action="{{ url_for('find.star', item_id=item.id) }}" class="star-form">
+    {{ csrf() }}
+    <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+    <button class="star-button{% if on %} is-on{% endif %}" type="submit" title="{{ 'Remove the star' if on else 'Add a star' }}"
+            aria-pressed="{{ 'true' if on else 'false' }}"><span class="visually-hidden">{{ 'Remove the star from' if on else 'Star' }} {{ item.name }}</span>{{ icon('star-filled' if on else 'star', 20) }}</button>
+  </form>
+{% endmacro %}
+
 {% macro type_icon(item, size=20) %}<span class="type-icon type-{{ kind_of(item) }}">{{ icon(icon_name(item), size) }}</span>{% endmacro %}
 
 {# The ⋯ menu. role is the person's role on the item; each entry shows only if the role allows it. #}
-{% macro item_menu(item, role, show_download=True) %}
+{% macro item_menu(item, role, show_download=True, is_starred=None) %}
   <details class="item-menu" data-popover>
     <summary class="icon-button" title="More for {{ item.name }}"><span class="visually-hidden">More for {{ item.name }}</span>{{ icon('more') }}</summary>
     <div class="menu-items">
       {% if show_download and not item.is_folder %}<a href="{{ url_for('drive.download', item_id=item.id) }}">{{ icon('download', 16) }} Download</a>{% endif %}
+      {% if show_download and item.is_folder and role_allows(role, 'download') %}<a href="{{ url_for('find.folder_zip', item_id=item.id) }}">{{ icon('zip', 16) }} Download as ZIP</a>{% endif %}
       {% if role_allows(role, 'share') %}<a href="{{ url_for('share.page', item_id=item.id) }}">{{ icon('share', 16) }} Share</a>{% endif %}
+      {% if is_starred is not none %}
+        <form method="post" action="{{ url_for('find.star', item_id=item.id) }}">
+          {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <button type="submit">{{ icon('star-filled' if is_starred else 'star', 16) }} {{ 'Remove star' if is_starred else 'Add star' }}</button>
+        </form>
+      {% endif %}
       {% if role_allows(role, 'rename') %}<a href="{{ url_for('drive.rename', item_id=item.id) }}">{{ icon('pencil', 16) }} Rename</a>{% endif %}
       {% if role_allows(role, 'move') %}<a href="{{ url_for('drive.move', item_id=item.id) }}">{{ icon('move', 16) }} Move</a>{% endif %}
       {% if role_allows(role, 'trash') %}
@@ -24,7 +41,7 @@
   </details>
 {% endmacro %}
 
-{% macro item_list(items, role, sort='name', descending=False, show_owner=False) %}
+{% macro item_list(items, role, sort='name', descending=False, show_owner=False, starred=()) %}
   <div class="file-table-wrap">
     <table class="file-table">
       <thead>
@@ -40,12 +57,12 @@
         {% for item in items %}
           <tr>
             <td class="col-name">
-              <a class="item-link" href="{{ item_url(item) }}">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span></a>
+              <a class="item-link" href="{{ item_url(item) }}">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span>{% if item.id in starred %}<span class="star-mark" title="Starred">{{ icon('star-filled', 14) }}</span>{% endif %}</a>
             </td>
             {% if show_owner %}<td class="col-owner">{{ 'me' if item.owner_id == g.user.id else item.owner.name }}</td>{% endif %}
             <td class="col-date" title="{{ item.updated_at|nice_datetime }}">{{ item.updated_at|ago }}</td>
             <td class="col-size">{{ '' if item.is_folder else item.size|filesize }}</td>
-            <td class="col-menu">{{ item_menu(item, role if role else 'owner') }}</td>
+            <td class="col-menu">{{ item_menu(item, role if role else 'owner', is_starred=item.id in starred) }}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -53,16 +70,20 @@
   </div>
 {% endmacro %}
 
-{% macro item_grid(items, role) %}
+{% macro item_grid(items, role, starred=()) %}
   <ul class="file-grid">
     {% for item in items %}
       <li class="file-card{% if item.is_folder %} is-folder{% endif %}">
         <a class="file-card-link" href="{{ item_url(item) }}">
-          <span class="file-card-art type-{{ kind_of(item) }}">{{ icon(icon_name(item), 40) }}</span>
+          <span class="file-card-art type-{{ kind_of(item) }}">
+            {{ icon(icon_name(item), 40) }}
+            {# The picture covers the icon; if it can't be made (not really a picture), app.js takes it away. #}
+            {% if kind_of(item) == 'image' and preview_kind(item) == 'image' %}<img src="{{ url_for('find.thumb', item_id=item.id) }}" alt="" loading="lazy" data-thumb>{% endif %}
+          </span>
           <span class="file-card-name">{{ item.name }}</span>
           <span class="file-card-meta">{{ KIND_NAMES[kind_of(item)] }}{% if not item.is_folder %} &middot; {{ item.size|filesize }}{% endif %}</span>
         </a>
-        <div class="file-card-menu">{{ item_menu(item, role if role else 'owner') }}</div>
+        <div class="file-card-menu">{{ item_menu(item, role if role else 'owner', is_starred=item.id in starred) }}</div>
       </li>
     {% endfor %}
   </ul>
@@ -79,4 +100,37 @@
       {% endfor %}
     </ol>
   </nav>
+{% endmacro %}
+
+{# A list of things from all over (Search, Starred, Recent): each row is an Access
+   (item + path + role), so the menu shows what this person may do with it. #}
+{% macro access_list(accesses, when=None, when_label='Last Changed', starred=()) %}
+  <div class="file-table-wrap">
+    <table class="file-table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col" class="col-where">Location</th>
+          <th scope="col" class="col-date">{{ when_label }}</th>
+          <th scope="col" class="col-menu"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for access in accesses %}
+          {% set item = access.item %}
+          <tr>
+            <td class="col-name"><a class="item-link" href="{{ item_url(item) }}">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span></a></td>
+            <td class="col-where">
+              {# Only owners see the folder name: for anyone else it could be a folder above what was shared with them. #}
+              {% if item.owner_id == g.user.id %}{{ access.path[-2].name if access.path|length > 1 else 'My Drive' }}
+              {% else %}Shared by {{ item.owner.first_name }}{% endif %}
+            </td>
+            {% set moment = when[loop.index0] if when else item.updated_at %}
+            <td class="col-date" title="{{ moment|nice_datetime }}">{{ moment|ago }}</td>
+            <td class="col-menu">{{ item_menu(item, access.role, is_starred=item.id in starred) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endmacro %}

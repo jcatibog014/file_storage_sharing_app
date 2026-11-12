@@ -388,7 +388,17 @@ function setUpSelectOnOpen() {
   }
 }
 
+// Grid pictures: a file that only claims to be a picture has no thumbnail; show its icon instead.
+function setUpThumbs() {
+  document.querySelectorAll("img[data-thumb]").forEach((picture) => {
+    const drop = () => picture.remove();
+    if (picture.complete && picture.naturalWidth === 0) drop();
+    picture.addEventListener("error", drop);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  setUpThumbs();
   setUpUploads();
   setUpSelectOnOpen();
   setUpToasts();

@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% from "_macros.html" import csrf, avatar %}
-{% from "_items.html" import breadcrumbs, item_menu, type_icon with context %}
+{% from "_items.html" import breadcrumbs, item_menu, type_icon, star_button with context %}
+{% from "_preview.html" import preview_box with context %}
 {% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
   {{ breadcrumbs(crumbs, top_label=crumb_top[0], top_url=crumb_top[1]) }}
   <div class="page-head">
     <div>
-      <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span></h1>
+      <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span>{{ star_button(item, is_starred) }}</h1>
       <p class="lead">{{ KIND_NAMES[kind_of(item)] }} &middot; {{ item.size|filesize }} &middot; {{ 'yours' if access.role == 'owner' else 'you are ' ~ a_role(access.role) }}</p>
     </div>
     <div class="head-actions">
@@ -22,12 +23,7 @@
 
   <div class="file-layout">
     <section class="preview-area">
-      {% block preview %}
-        <div class="preview-empty">
-          <span class="type-icon type-{{ kind_of(item) }}">{{ icon(icon_name(item), 72) }}</span>
-          <p>No preview for this kind of file. Download it to open it.</p>
-        </div>
-      {% endblock %}
+      {{ preview_box(item, preview, url_for('find.preview', item_id=item.id), text, more_text) }}
     </section>
     <aside class="side-panel">
       <section class="card details-card">

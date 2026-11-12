@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_items.html" import access_list with context %}
+{% block title %}Search - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Search</h1></div></div>
+  <form class="search-form" method="get" action="{{ url_for('find.search') }}" role="search">
+    <label class="search-words"><span class="visually-hidden">Words in the name</span>
+      {{ icon('search', 18) }}
+      <input type="search" name="q" value="{{ words }}" placeholder="Words in the name" autofocus></label>
+    <label><span class="visually-hidden">Type</span>
+      <select name="type">{% for value, label in TYPE_CHOICES %}<option value="{{ value }}"{% if kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label><span class="visually-hidden">Where</span>
+      <select name="where">{% for value, label in WHERE_CHOICES %}<option value="{{ value }}"{% if where == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <button class="button" type="submit">Search</button>
+  </form>
+  {% if words or kind %}
+    {% if results %}
+      <p class="muted small result-count">{{ plural(results|length, 'result') }}{% if results|length >= 100 %} (the first 100){% endif %}</p>
+      {{ access_list(results) }}
+    {% else %}
+      <div class="empty-state">{{ icon('search', 56) }}<h2>Nothing Found</h2><p>Try fewer or other words, or another type.</p></div>
+    {% endif %}
+  {% else %}
+    <p class="empty-note">Type part of a name, or pick a type. Search looks in your drive and in everything shared with you.</p>
+  {% endif %}
+{% endblock %}

@@ -11,7 +11,7 @@ Anything else is a 404.
 from flask import (Blueprint, abort, flash, g, jsonify, make_response, redirect, render_template, request, session,
                    url_for)
 
-from .. import db, files, limits, links, permissions, storage
+from .. import db, files, limits, links, permissions, previews, storage
 from ..dates import utcnow
 from ..models import FILE, Upload
 
@@ -61,8 +61,10 @@ def _show(s, link, token, path):
         return _private(render_template("public_folder.html", link=link, token=token, item=item, path=path,
                                         items=children, own_access=own_access))
     version = files.current_version(s, item)
+    kind = previews.preview_kind(item)
+    text, more = previews.text_start(version) if kind == "text" and version else (None, False)
     return _private(render_template("public_file.html", link=link, token=token, item=item, path=path,
-                                    version=version, own_access=own_access))
+                                    version=version, own_access=own_access, preview=kind, text=text, more_text=more))
 
 
 @bp.get("/s/<token>")

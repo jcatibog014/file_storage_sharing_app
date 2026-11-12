@@ -5,7 +5,7 @@ gives a 404 for anything the person can't see.
 """
 from flask import Blueprint, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 
-from .. import db, files, permissions, storage
+from .. import db, files, find, permissions, previews, storage
 from ..auth import login_required
 from ..dates import utcnow
 from ..models import FILE, FOLDER, Item, Upload
@@ -79,7 +79,8 @@ def home():
     sort, descending = sort_choice()
     items = files.children(s, g.user.id, None, sort, descending)
     return render_template("folder.html", access=None, folder=None, path=[], items=items, sort=sort,
-                           descending=descending, view=view_mode(), can_add=True, menu_here="my-drive")
+                           descending=descending, view=view_mode(), can_add=True, menu_here="my-drive",
+                           starred=find.starred_ids(s, g.user, items))
 
 
 @bp.get("/folders/<int:item_id>")
@@ -87,11 +88,14 @@ def home():
 def folder(item_id):
     s = db.session()
     access = permissions.require(s, g.user, item_id, "view", kind=FOLDER)
+    find.touch(s, g.user, access.item, utcnow())
+    s.commit()
     sort, descending = sort_choice()
     items = files.children(s, access.item.owner_id, access.item.id, sort, descending)
     crumbs, crumb_top = crumbs_for(s, access)
     return render_template("folder.html", access=access, folder=access.item, path=access.path, items=items,
                            crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
+                           starred=find.starred_ids(s, g.user, items + [access.item]),
                            sort=sort, descending=descending, view=view_mode(), can_add=access.can("upload"),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
 
@@ -101,10 +105,15 @@ def folder(item_id):
 def file(item_id):
     s = db.session()
     access = permissions.require(s, g.user, item_id, "view", kind=FILE)
+    find.touch(s, g.user, access.item, utcnow())
+    s.commit()
     version = files.current_version(s, access.item)
     crumbs, crumb_top = crumbs_for(s, access)
+    kind = previews.preview_kind(access.item)
+    text, more = previews.text_start(version) if kind == "text" and version else (None, False)
     return render_template("file.html", access=access, item=access.item, path=access.path, version=version,
-                           versions=files.versions(s, access.item),
+                           versions=files.versions(s, access.item), preview=kind, text=text, more_text=more,
+                           is_starred=find.is_starred(s, g.user, access.item),
                            crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
 
@@ -443,6 +452,7 @@ def api_finish_upload(upload_id):
         s.commit()
         files.sweep_blobs(s, [blob_id])
         return json_problem(str(problem))
+    find.touch(s, g.user, item, utcnow())
     s.commit()
     files.sweep_after_commit(s)
     return jsonify({"ok": True, "item": {"id": item.id, "name": item.name, "url": item_url(item)}})

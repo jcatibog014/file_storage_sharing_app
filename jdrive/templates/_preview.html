@@ -1,0 +1,27 @@
+{# What a file looks like on its page. src is the address that checks access and then
+   redirects to a fresh signed link (so no bucket link sits in the page). #}
+{% from "_icons.html" import icon %}
+{% macro preview_box(item, kind, src, text=None, more_text=False) %}
+  {% if kind == 'image' %}
+    <img class="preview-image" src="{{ src }}" alt="{{ item.name }}">
+  {% elif kind == 'pdf' %}
+    <iframe class="preview-pdf" src="{{ src }}" title="{{ item.name }}"></iframe>
+  {% elif kind == 'video' %}
+    <video class="preview-video" src="{{ src }}" controls preload="metadata"></video>
+  {% elif kind == 'audio' %}
+    <div class="preview-audio">
+      <span class="type-icon type-audio">{{ icon('file-audio', 64) }}</span>
+      <audio src="{{ src }}" controls preload="metadata"></audio>
+    </div>
+  {% elif kind == 'text' and text is not none %}
+    <div class="preview-text">
+      <pre>{{ text }}</pre>
+      {% if more_text %}<p class="muted small preview-more">Only the start is shown. Download the file to see all of it.</p>{% endif %}
+    </div>
+  {% else %}
+    <div class="preview-empty">
+      <span class="type-icon type-{{ kind_of(item) }}">{{ icon(icon_name(item), 72) }}</span>
+      <p>No preview for this kind of file. Download it to open it.</p>
+    </div>
+  {% endif %}
+{% endmacro %}

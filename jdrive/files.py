@@ -410,9 +410,9 @@ def delete_forever(s, item):
 
 
 def thumb_use():
-    """Blobs used as picture thumbnails count as in use too (stage 6 fills this in)."""
-    from sqlalchemy import false as sql_false
-    return sql_false()
+    """Blobs used as picture thumbnails count as in use too."""
+    from .models import Thumbnail
+    return exists().where(Thumbnail.blob_id == Blob.id)
 
 
 def sweep_blobs(s, blob_ids=None):

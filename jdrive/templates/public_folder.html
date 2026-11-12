@@ -15,6 +15,7 @@
     <div class="head-actions">
       {% block link_actions %}{% endblock %}
       {% if own_access %}<a class="button button-quiet" href="{{ item_url(item) }}">Open in J: Drive</a>{% endif %}
+      {% if link.allow_download and items %}<a class="button" href="{{ url_for('find.link_zip', token=token, item_id=item.id) }}">{{ icon('zip', 16) }} Download all</a>{% endif %}
     </div>
   </div>
   {% if items %}

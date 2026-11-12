@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% from "_macros.html" import csrf %}
-{% from "_items.html" import item_list, item_grid, breadcrumbs, type_icon with context %}
+{% from "_items.html" import item_list, item_grid, breadcrumbs, type_icon, star_button with context %}
 {% set title = folder.name if folder else 'My Drive' %}
 {% set role = access.role if access else 'owner' %}
 {% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
@@ -9,11 +9,14 @@
   {% if folder %}{{ breadcrumbs(crumbs, top_label=crumb_top[0], top_url=crumb_top[1]) }}{% endif %}
   <div class="page-head">
     <div>
-      <h1 class="folder-title">{% if folder %}{{ type_icon(folder, 26) }}{% endif %}{{ title }}</h1>
+      <h1 class="folder-title">{% if folder %}{{ type_icon(folder, 26) }}{% endif %}<span class="title-text">{{ title }}</span>{% if folder %}{{ star_button(folder, folder.id in starred) }}{% endif %}</h1>
       {% block folder_lead %}{% endblock %}
     </div>
     <div class="head-actions">
       {% block folder_actions %}{% endblock %}
+      {% if folder and items and access.can('download') %}
+        <a class="button button-quiet" href="{{ url_for('find.folder_zip', item_id=folder.id) }}" title="Download {{ folder.name }} as a ZIP file">{{ icon('download', 16) }} Download</a>
+      {% endif %}
       {% if access and access.can('share') %}
         <a class="button button-quiet" href="{{ url_for('share.page', item_id=folder.id) }}">{{ icon('share', 16) }} Share{% if people %} <span class="button-count">{{ people }}</span>{% endif %}</a>
       {% elif access %}
@@ -68,7 +71,7 @@
 
   <div class="drop-zone"{% if can_add %} data-drop-zone{% endif %}>
     {% if items %}
-      {% if view == 'grid' %}{{ item_grid(items, role) }}{% else %}{{ item_list(items, role, sort, descending, show_owner=show_owner|default(False)) }}{% endif %}
+      {% if view == 'grid' %}{{ item_grid(items, role, starred) }}{% else %}{{ item_list(items, role, sort, descending, show_owner=show_owner|default(False), starred=starred) }}{% endif %}
     {% else %}
       <div class="empty-state">
         {{ icon('folder', 56) }}

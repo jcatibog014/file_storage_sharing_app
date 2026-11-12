@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% from "_items.html" import type_icon with context %}
+{% from "_preview.html" import preview_box with context %}
 {% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
 {% block body_class %}public-layout{% endblock %}
 {% block sidebar %}{% endblock %}
@@ -18,11 +19,6 @@
     </div>
   </div>
   <section class="preview-area">
-    {% block preview %}
-      <div class="preview-empty">
-        <span class="type-icon type-{{ kind_of(item) }}">{{ icon(icon_name(item), 72) }}</span>
-        <p>No preview for this kind of file. Download it to open it.</p>
-      </div>
-    {% endblock %}
+    {{ preview_box(item, preview, url_for('find.link_preview', token=token, item_id=item.id), text, more_text) }}
   </section>
 {% endblock %}

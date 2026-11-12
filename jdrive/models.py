@@ -234,3 +234,34 @@ class ShareLink(Base):
     allow_download: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
 
     item: Mapped[Item] = relationship()
+
+
+# ---------- Find and preview ----------
+
+class Star(Base):
+    """A star someone put on a file or folder (each person has their own)."""
+    __tablename__ = "stars"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), primary_key=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Recent(Base):
+    """When someone last opened (or added) an item, for the Recent page."""
+    __tablename__ = "recents"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), primary_key=True, index=True)
+    seen_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class Thumbnail(Base):
+    """A small WebP picture of one version of a picture file, made the first time
+    it is needed (previews.py). blob_id None = the picture couldn't be read, so
+    don't try again."""
+    __tablename__ = "thumbnails"
+
+    version_id: Mapped[int] = mapped_column(ForeignKey("file_versions.id", ondelete="CASCADE"), primary_key=True)
+    blob_id: Mapped[int | None] = mapped_column(ForeignKey("blobs.id", ondelete="RESTRICT"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
