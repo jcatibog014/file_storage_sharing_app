@@ -74,7 +74,12 @@ def filesize(size):
     return f"{size:.0f} TB"
 
 
+def local_day_iso(moment):
+    """2026-12-31: the Philippine day of a moment, for a date box."""
+    return to_local(moment).date().isoformat()
+
+
 def init_app(app):
-    for function in (nice_date, short_date, clock, nice_datetime, ago, duration, filesize):
+    for function in (nice_date, short_date, clock, nice_datetime, ago, duration, filesize, local_day_iso):
         app.jinja_env.filters[function.__name__] = function
     app.jinja_env.globals["plural"] = plural

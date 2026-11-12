@@ -5,7 +5,7 @@ Times are naive UTC (dates.utcnow()).
 """
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, false, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, false, func, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -166,7 +166,9 @@ class Upload(Base):
     __tablename__ = "uploads"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # Who is uploading: a logged-in person, or a visitor with a "Can upload" link.
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    link_id: Mapped[int | None] = mapped_column(ForeignKey("share_links.id", ondelete="CASCADE"), index=True)
     blob_id: Mapped[int] = mapped_column(ForeignKey("blobs.id", ondelete="CASCADE"), index=True)
     # Where the new file goes (None = the top of the owner's My Drive)...
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
@@ -219,10 +221,16 @@ class ShareLink(Base):
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), unique=True)
     nonce: Mapped[str] = mapped_column(String(64))
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    # "viewer": open (and download, if allowed). "uploader": add files to a folder without seeing it.
     role: Mapped[str] = mapped_column(String(10), default="viewer")
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime)
     open_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Link controls: stops working at expires_at; asks for a password (only its hash is kept);
+    # allow_download off = look but don't download (best effort: a screen can always be photographed).
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    password_hash: Mapped[str | None] = mapped_column(String(255))
+    allow_download: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
 
     item: Mapped[Item] = relationship()

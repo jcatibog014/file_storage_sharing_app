@@ -252,7 +252,9 @@ html:not(.js) .sidebar-menu { display: block; }
 .user-menu-items a:hover, .user-menu-items button:hover { background: var(--surface-2); text-decoration: none; }
 
 @media (min-width: 56rem) {
-  .app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
+  /* The column is painted plum too, so the menu's colour always reaches the bottom of a long page. */
+  .app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+         background: linear-gradient(to right, var(--sidebar) var(--sidebar-width), transparent var(--sidebar-width)); }
   .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
   .sidebar-top { padding: 1.25rem 1.125rem 0.75rem; }
   .menu-button { display: none; }
@@ -727,3 +729,46 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .file-table .col-where { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-link.is-plain { cursor: default; }
 @media (max-width: 40rem) { .file-table .col-where, .file-table .col-left { display: none; } .file-table .col-actions { width: 9rem; } }
+
+/* ---------- Link controls ---------- */
+
+.link-facts { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
+.link-settings { margin-top: 0.75rem; }
+.link-settings summary { list-style: none; display: inline-flex; }
+.link-settings summary::-webkit-details-marker { display: none; }
+.link-settings[open] summary { margin-bottom: 1rem; }
+.link-settings > form { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.link-actions { margin-top: 0.75rem; justify-content: flex-start; }
+.settings-row { display: grid; gap: 1rem; align-items: end; }
+@media (min-width: 36rem) { .settings-row { grid-template-columns: 14rem minmax(0, 1fr); } }
+.downloads-switch { height: var(--control-height); }
+.password-choice { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+.check-line { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; }
+
+.choice-cards { display: grid; gap: 0.5rem; border: 0; padding: 0; margin: 0; }
+@media (min-width: 36rem) { .choice-cards { grid-template-columns: repeat(2, 1fr); } }
+.choice-cards legend { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.375rem; }
+.choice-card {
+  display: flex; gap: 0.625rem; align-items: flex-start; padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); cursor: pointer; background: var(--surface);
+}
+.choice-card:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.choice-card input { margin-top: 0.1875rem; }
+.choice-card strong { display: block; font-size: 0.9375rem; }
+.choice-card small { color: var(--muted); font-size: 0.8125rem; }
+
+.center-card { margin: 2rem auto; text-align: center; display: grid; gap: 0.75rem; justify-items: center; max-width: 28rem; }
+.center-card form { width: 100%; text-align: left; }
+.center-card .button { width: 100%; }
+.lock-mark {
+  display: inline-flex; align-items: center; justify-content: center; width: 3.5rem; height: 3.5rem; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent-text);
+}
+.drop-card { max-width: 34rem; }
+.drop-zone-small { min-height: 0; width: 100%; padding: 1.5rem 1rem; border: 2px dashed var(--border-strong); display: grid; gap: 0.5rem; justify-items: center; }
+.upload-form-wide { display: flex; justify-content: center; width: auto; }
+.upload-form-wide .button { width: auto; }
+.sent-list { width: 100%; text-align: left; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.sent-list h2 { font-size: 0.9375rem; margin-bottom: 0.375rem; }
+.sent-list li { display: flex; align-items: center; gap: 0.375rem; font-size: 0.875rem; padding: 0.125rem 0; overflow-wrap: anywhere; }
+.sent-list svg { color: var(--positive); flex: none; }

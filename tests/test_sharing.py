@@ -193,7 +193,7 @@ def test_the_share_page_shows_the_link_and_counts_opens(app):
     token = turn_on_link(app, maria, folder)
     app.test_client().get(f"/s/{token}")
     page = text(maria.get(f"/items/{folder}/share"))
-    assert f"/s/{token}" in page and "Opened 1 time." in page
+    assert f"/s/{token}" in page and "Opened 1 time" in page
 
 
 def test_code_helper_still_works(app):

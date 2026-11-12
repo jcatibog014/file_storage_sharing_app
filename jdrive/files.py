@@ -195,20 +195,22 @@ def check_space(s, owner_id, size):
         check(s, owner_id, size)
 
 
-def start_upload(s, user, owner_id, parent, name, size, declared_type, moment, target=None):
-    """Step 1: returns (upload, link). link = {"url", "method", "headers"} for the browser."""
+def start_upload(s, user, owner_id, parent, name, size, declared_type, moment, target=None, link=None):
+    """Step 1: returns (upload, signed). signed = {"url", "method", "headers"} for the browser.
+    user is None for a visitor with a "Can upload" link (then link is that link)."""
     name = clean_name(name)
     check_size(size)
     check_space(s, owner_id, size)
-    open_uploads = s.scalar(select(func.count()).select_from(Upload)
-                            .where(Upload.user_id == user.id, Upload.expires_at > moment))
+    whose = Upload.user_id == user.id if user is not None else Upload.link_id == link.id
+    open_uploads = s.scalar(select(func.count()).select_from(Upload).where(whose, Upload.expires_at > moment))
     if open_uploads >= MAX_OPEN_UPLOADS:
         raise Problem("That's a lot of uploads at once. Wait for some to finish.")
     content_type = content_type_for(name, declared_type)
     blob = Blob(key=storage.new_key(), size=size, content_type=content_type, state="pending", created_at=moment)
     s.add(blob)
     s.flush()
-    upload = Upload(user_id=user.id, blob_id=blob.id, parent_id=parent.id if parent else None, owner_id=owner_id,
+    upload = Upload(user_id=user.id if user else None, link_id=link.id if link else None, blob_id=blob.id,
+                    parent_id=parent.id if parent else None, owner_id=owner_id,
                     target_item_id=target.id if target else None, name=name, size=size,
                     content_type=content_type, created_at=moment, expires_at=moment + UPLOAD_LIFETIME)
     s.add(upload)
@@ -245,13 +247,13 @@ def _add_file(s, user, owner_id, parent_id, target_id, name, blob, moment):
         number = (s.scalar(select(func.max(FileVersion.number)).where(FileVersion.item_id == item.id)) or 0) + 1
     else:
         item = Item(kind=FILE, name=unique_name(s, owner_id, parent_id, name), parent_id=parent_id,
-                    owner_id=owner_id, created_by_id=user.id, created_at=moment)
+                    owner_id=owner_id, created_by_id=user.id if user else None, created_at=moment)
         s.add(item)
         number = 1
     item.size, item.content_type, item.updated_at = blob.size, blob.content_type, moment
     s.flush()
     s.add(FileVersion(item_id=item.id, number=number, blob_id=blob.id, size=blob.size,
-                      uploaded_by_id=user.id, created_at=moment))
+                      uploaded_by_id=user.id if user else None, created_at=moment))
     s.flush()
     _trim_versions(s, item)
     return item

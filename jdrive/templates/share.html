@@ -97,14 +97,69 @@
     <section class="card share-card link-card">
       <h2>Link</h2>
       {% if link and not link.disabled_at %}
-        <p class="link-state">{{ icon('link', 18) }} <span><strong>Anyone with the link</strong> can open {{ 'this folder and everything in it' if item.is_folder else 'this file' }}. No account needed.</span></p>
+        <p class="link-state">{{ icon('link', 18) }} <span>
+          {% if link.role == 'uploader' %}<strong>Anyone with the link can add files</strong> to this folder, without seeing what is in it.
+          {% else %}<strong>Anyone with the link</strong> can open {{ 'this folder and everything in it' if item.is_folder else 'this file' }}{% if not link.allow_download %}, but not download{% endif %}.{% endif %}
+          No account needed.</span></p>
+        {% if not link_open %}<p class="form-error">This link has run out. Choose a new end date below to use it again.</p>{% endif %}
         <div class="copy-row">
           <label class="visually-hidden" for="share-link">Link</label>
           <input id="share-link" type="text" value="{{ link_address }}" readonly>
           <button class="button button-quiet" type="button" data-copy="share-link" hidden>Copy</button>
         </div>
-        <p class="muted small">Opened {{ plural(link.open_count, 'time') }}.</p>
-        <form method="post" class="form-actions">
+        <p class="link-facts muted small">
+          Opened {{ plural(link.open_count, 'time') }}
+          {% if link.expires_at %} &middot; {{ 'Ran out' if not link_open else 'Works until' }} {{ link.expires_at|nice_date }}{% endif %}
+          {% if link.password_hash %} &middot; {{ icon('lock', 13) }} Password{% endif %}
+        </p>
+
+        <details class="link-settings"{% if not link_open %} open{% endif %}>
+          <summary class="button button-quiet">{{ icon('settings', 16) }} Link settings</summary>
+          <form method="post" class="stack">
+            {{ csrf() }}
+            <input type="hidden" name="action" value="link_settings">
+            {% if item.is_folder %}
+              <fieldset class="choice-cards">
+                <legend>People with the link</legend>
+                {% for value, label in LINK_ROLES.items() %}
+                  <label class="choice-card"><input type="radio" name="link_role" value="{{ value }}"{% if link.role == value %} checked{% endif %}>
+                    <span><strong>{{ label }}</strong>
+                      <small>{{ 'Open the folder and what is in it.' if value == 'viewer' else "Add files to it (like a drop box), but not see what's there." }}</small></span></label>
+                {% endfor %}
+              </fieldset>
+            {% else %}
+              <input type="hidden" name="link_role" value="viewer">
+            {% endif %}
+            <div class="settings-row">
+              <label class="field"><span class="field-label">Works until <span class="hint">Empty = no end</span></span>
+                <input type="date" name="expires" value="{{ link.expires_at|local_day_iso if link.expires_at else '' }}"></label>
+              <label class="switch-line downloads-switch">
+                <input type="checkbox" class="switch" name="allow_download" value="1"{% if link.allow_download %} checked{% endif %}>
+                <span>Allow downloads</span>
+              </label>
+            </div>
+            <fieldset class="plain-fieldset stack-tight">
+              <legend class="field-label">Password</legend>
+              <div class="password-choice">
+                {% if link.password_hash %}
+                  <label class="check-line"><input type="radio" name="password_action" value="keep" checked> Keep the password</label>
+                  <label class="check-line"><input type="radio" name="password_action" value="set"> Change it</label>
+                  <label class="check-line"><input type="radio" name="password_action" value="remove"> No password</label>
+                {% else %}
+                  <label class="check-line"><input type="radio" name="password_action" value="keep" checked> No password</label>
+                  <label class="check-line"><input type="radio" name="password_action" value="set"> Ask for a password</label>
+                {% endif %}
+              </div>
+              <label class="field"><span class="visually-hidden">New password</span>
+                <input type="password" name="password" autocomplete="new-password" placeholder="New password (at least 4 characters)"></label>
+              <p class="hint small">Send the password separately (not in the same message as the link).</p>
+            </fieldset>
+            <p class="hint small">Turning off downloads stops the Download buttons. People can still look, and a screen can always be photographed.</p>
+            <div class="form-actions"><button class="button" type="submit">Save link settings</button></div>
+          </form>
+        </details>
+
+        <form method="post" class="form-actions link-actions">
           {{ csrf() }}
           <button class="button button-quiet" type="submit" name="action" value="link_new"
                   data-confirm-button="Make a new link? The old one stops working for everyone.">Make a new link</button>

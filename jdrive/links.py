@@ -17,12 +17,26 @@ import base64
 import hashlib
 import hmac
 import secrets
+import time
+from datetime import date, datetime, time as day_time, timedelta
 
-from flask import current_app, url_for
+from flask import current_app, session, url_for
 from sqlalchemy import select
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import tree
+from . import limits, tree
+from .dates import from_local, utcnow
 from .models import ShareLink
+
+VIEWER, UPLOADER = "viewer", "uploader"
+LINK_ROLES = {VIEWER: "Can view", UPLOADER: "Can upload"}
+PASSWORD_MIN_LENGTH = 4
+UNLOCK_SECONDS = 3600          # a right password is remembered this long, in this browser
+PASSWORD_TRIES = 10            # per link and network, every 15 minutes
+
+
+class Problem(Exception):
+    pass
 
 
 def _token(link):
@@ -83,9 +97,71 @@ def find(s, token):
     return link
 
 
-def is_open(link):
-    """Can this link be used right now? (Stage 5 adds expiry dates.)"""
-    return link is not None and link.disabled_at is None
+def is_open(link, moment=None):
+    """Can this link be used right now? Not if it is off or has run out."""
+    if link is None or link.disabled_at is not None:
+        return False
+    return link.expires_at is None or link.expires_at > (moment or utcnow())
+
+
+def expiry_from_day(text, moment):
+    """"2026-12-31" -> the end of that day, Philippine time, as naive UTC. "" -> None (never)."""
+    if not text:
+        return None
+    try:
+        day = date.fromisoformat(text)
+    except ValueError:
+        raise Problem("That date isn't right.") from None
+    end = from_local(datetime.combine(day, day_time(23, 59, 59)))
+    if end <= moment:
+        raise Problem("Choose a day after today, or no end date.")
+    if end > moment + timedelta(days=366):
+        raise Problem("A link can work for at most a year. Make a new one after that.")
+    return end
+
+
+def save_settings(link, item, role, expires_text, allow_download, password_action, password, moment):
+    """The Share page's link settings form."""
+    if role not in LINK_ROLES:
+        raise Problem("Choose Can view or Can upload.")
+    if role == UPLOADER and not item.is_folder:
+        raise Problem("Upload links are for folders.")
+    expires = expiry_from_day(expires_text, moment)
+    if password_action == "set":
+        if len(password) < PASSWORD_MIN_LENGTH:
+            raise Problem(f"Use a password of at least {PASSWORD_MIN_LENGTH} characters.")
+        link.password_hash = generate_password_hash(password)
+    elif password_action == "remove":
+        link.password_hash = None
+    link.role, link.expires_at, link.allow_download = role, expires, allow_download
+
+
+# ---------- The password ----------
+# A right password unlocks the link in this browser's session for an hour. The
+# session remembers a fingerprint of the link's nonce and password hash, so a
+# new password (or a new link) locks everyone out again.
+
+def _fingerprint(link):
+    return hashlib.sha256(f"{link.nonce}:{link.password_hash}".encode()).hexdigest()[:16]
+
+
+def is_unlocked(link):
+    if not link.password_hash:
+        return True
+    remembered = session.get("unlocked_links", {}).get(str(link.id))
+    return bool(remembered) and remembered[0] == _fingerprint(link) and remembered[1] > time.time()
+
+
+def try_password(s, link, password, moment):
+    """True if right (and remember it). Wrong tries are limited per link and network."""
+    if not limits.hit(s, f"link-password:{link.id}:{limits.client_ip()}", PASSWORD_TRIES, 900, moment):
+        raise Problem("Too many wrong tries. Please wait 15 minutes.")
+    if not check_password_hash(link.password_hash or "", password or ""):
+        return False
+    unlocked = dict(session.get("unlocked_links", {}))
+    unlocked[str(link.id)] = [_fingerprint(link), time.time() + UNLOCK_SECONDS]
+    session["unlocked_links"] = unlocked
+    return True
 
 
 def path_inside(s, link, item_id):

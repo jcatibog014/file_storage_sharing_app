@@ -14,7 +14,7 @@
     </div>
     <div class="head-actions">
       {% if own_access %}<a class="button button-quiet" href="{{ item_url(item) }}">Open in J: Drive</a>{% endif %}
-      {% block download_button %}<a class="button" href="{{ url_for('public.download', token=token, item_id=item.id) }}">{{ icon('download', 16) }} Download</a>{% endblock %}
+      {% block download_button %}{% if link.allow_download %}<a class="button" href="{{ url_for('public.download', token=token, item_id=item.id) }}">{{ icon('download', 16) }} Download</a>{% endif %}{% endblock %}
     </div>
   </div>
   <section class="preview-area">

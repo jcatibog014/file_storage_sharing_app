@@ -86,6 +86,22 @@ def page(item_id):
                 s.commit()
             flash("The link is off. Only the people listed can open it.")
             return redirect(here)
+        elif action == "link_settings":
+            link = links.for_item(s, item)
+            if link is None:
+                abort(404)
+            try:
+                links.save_settings(link, item, request.form.get("link_role", links.VIEWER),
+                                    request.form.get("expires", ""), request.form.get("allow_download") == "1",
+                                    request.form.get("password_action", "keep"), request.form.get("password", ""),
+                                    moment)
+            except links.Problem as problem:
+                s.rollback()
+                flash(str(problem), "error")
+                return redirect(here)
+            s.commit()
+            flash("Saved the link settings.")
+            return redirect(here)
         elif action == "link_new":
             link = links.for_item(s, item)
             if link is not None:
@@ -99,6 +115,7 @@ def page(item_id):
     return render_template("share.html", access=access, item=item, path=access.path,
                            shares=sharing.shares_on(s, item), inherited=sharing.inherited_shares(s, access.path),
                            link=link, link_address=links.address(link) if link else None, errors=errors, form=form,
+                           link_open=links.is_open(link), LINK_ROLES=links.LINK_ROLES,
                            ROLE_CHOICES=[(role, permissions.ROLE_NAMES[role]) for role in permissions.SHARE_ROLES]), \
         400 if errors else 200
 

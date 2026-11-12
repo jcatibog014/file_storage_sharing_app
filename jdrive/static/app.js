@@ -205,6 +205,7 @@ function setUpUploads() {
   const input = form.querySelector("[data-upload-input]");
   const csrf = form.querySelector('[name="csrf_token"]').value;
   const zone = document.querySelector("[data-drop-zone]");
+  const api = form.dataset.api || "/api"; // a "Can upload" link has its own: /s/<token>/api
   let panel = null;
   let rows = null;
 
@@ -296,7 +297,7 @@ function setUpUploads() {
   const uploadOne = async (file) => {
     const row = makeRow(file);
     try {
-      const link = await askServer("/api/uploads", {
+      const link = await askServer(`${api}/uploads`, {
         parent_id: form.dataset.parent || "",
         target_id: form.dataset.target || "",
         name: file.name,
@@ -305,7 +306,7 @@ function setUpUploads() {
       });
       row.progress(0);
       await putToBucket(link, file, row);
-      await askServer(`/api/uploads/${link.upload_id}/done`, {});
+      await askServer(`${api}/uploads/${link.upload_id}/done`, {});
       row.done();
       return true;
     } catch (error) {

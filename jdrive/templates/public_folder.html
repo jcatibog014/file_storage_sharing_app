@@ -10,7 +10,7 @@
   <div class="page-head">
     <div>
       <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span></h1>
-      <p class="lead">Shared by {{ item.owner.name }} with a link.</p>
+      <p class="lead">Shared by {{ item.owner.name }} with a link.{% if not link.allow_download %} Downloads are off.{% endif %}</p>
     </div>
     <div class="head-actions">
       {% block link_actions %}{% endblock %}
@@ -27,7 +27,7 @@
               <td class="col-name"><a class="item-link" href="{{ url_for('public.inside', token=token, item_id=child.id) }}">{{ type_icon(child) }}<span class="item-name">{{ child.name }}</span></a></td>
               <td class="col-date">{{ child.updated_at|ago }}</td>
               <td class="col-size">{{ '' if child.is_folder else child.size|filesize }}</td>
-              <td class="col-menu">{% if not child.is_folder %}<a class="icon-button" href="{{ url_for('public.download', token=token, item_id=child.id) }}" title="Download {{ child.name }}"><span class="visually-hidden">Download {{ child.name }}</span>{{ icon('download') }}</a>{% endif %}</td>
+              <td class="col-menu">{% if not child.is_folder and link.allow_download %}<a class="icon-button" href="{{ url_for('public.download', token=token, item_id=child.id) }}" title="Download {{ child.name }}"><span class="visually-hidden">Download {{ child.name }}</span>{{ icon('download') }}</a>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>
