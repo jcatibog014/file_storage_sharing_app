@@ -253,8 +253,8 @@ html:not(.js) .sidebar-menu { display: block; }
 
 @media (min-width: 56rem) {
   /* The column is painted plum too, so the menu's colour always reaches the bottom of a long page. */
-  .app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-         background: linear-gradient(to right, var(--sidebar) var(--sidebar-width), transparent var(--sidebar-width)); }
+  .app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
+  .app:has(> .sidebar) { background: linear-gradient(to right, var(--sidebar) var(--sidebar-width), transparent var(--sidebar-width)); }
   .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
   .sidebar-top { padding: 1.25rem 1.125rem 0.75rem; }
   .menu-button { display: none; }

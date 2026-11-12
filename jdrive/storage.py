@@ -33,7 +33,9 @@ import time
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
+import click
 from flask import Blueprint, Response, abort, current_app, request, send_file, url_for
+from flask.cli import with_appcontext
 
 UPLOAD_LINK_SECONDS = 600     # 10 minutes to start the upload
 DOWNLOAD_LINK_SECONDS = 60    # a download link works for one minute
@@ -275,6 +277,31 @@ def get():
     return current_app.extensions["jdrive_bucket"]
 
 
+def cors_rules(origin):
+    """What the bucket must allow so browsers on our site can PUT uploads straight
+    to it and GET previews (CORS: the browser asks the bucket first)."""
+    return [{
+        "AllowedOrigins": [origin],
+        "AllowedMethods": ["PUT", "GET", "HEAD"],
+        "AllowedHeaders": ["content-type"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3600,
+    }]
+
+
+@click.command("bucket-cors")
+@with_appcontext
+@click.argument("origin")
+def bucket_cors_command(origin):
+    """Let the site at ORIGIN (like https://j-drive.onrender.com) upload straight to the bucket."""
+    bucket = get()
+    if not isinstance(bucket, S3Bucket):
+        raise click.ClickException("Set the S3_ settings first: this is for the live bucket (Backblaze B2).")
+    origin = origin.rstrip("/")
+    bucket.client.put_bucket_cors(Bucket=bucket.bucket, CORSConfiguration={"CORSRules": cors_rules(origin)})
+    click.echo(f"The bucket now takes uploads from {origin}.")
+
+
 def init_app(app):
     config = app.config
     if config.get("S3_BUCKET"):
@@ -291,4 +318,5 @@ def init_app(app):
         bucket = LocalBucket(config["BUCKET_DIR"], config["SECRET_KEY"])
     app.extensions["jdrive_bucket"] = bucket
     app.register_blueprint(bp)
+    app.cli.add_command(bucket_cors_command)
     return bucket

@@ -82,7 +82,6 @@ def create_app(test_config=None):
         BUCKET_DIR=str(Path(app.instance_path) / "bucket"),
         # The secret the GitHub Actions timer sends to POST /tasks/tick (tick.py).
         TICK_KEY=os.environ.get("TICK_KEY"),
-        BASE_URL=os.environ.get("BASE_URL"),
     )
     if test_config:
         app.config.update(test_config)
@@ -97,9 +96,10 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import activity, auth, db, files, formatting, notify, permissions, quota, sharing, storage, tick
+    from . import activity, auth, db, files, formatting, notify, permissions, quota, seed, sharing, storage, tick
     from .views import drive, public, share
     from .views import activity as activity_views
+    from .views import demo
     from .views import find as find_views
 
     db.init_app(app)
@@ -114,12 +114,13 @@ def create_app(test_config=None):
     tick.init_app(app)
     find_views.init_app(app)
     activity.init_app(app)
+    seed.init_app(app)
     notify.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
-    for blueprint in (auth.bp, drive.bp, share.bp, public.bp, tick.bp, find_views.bp, activity_views.bp):
+    for blueprint in (auth.bp, drive.bp, share.bp, public.bp, tick.bp, find_views.bp, activity_views.bp, demo.bp):
         app.register_blueprint(blueprint)
 
-    app.jinja_env.globals.update(APP_NAME=APP_NAME, TAGLINE=TAGLINE, has_demo="auth.demo" in app.view_functions)
+    app.jinja_env.globals.update(APP_NAME=APP_NAME, TAGLINE=TAGLINE, has_demo="demo.start" in app.view_functions)
     policy = content_security_policy(bucket.origin())
 
     @app.get("/healthz")

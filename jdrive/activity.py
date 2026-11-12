@@ -47,8 +47,15 @@ def log(s, actor, item, verb, moment, detail=None, label=None):
                    detail=(detail or None) and str(detail)[:300]))
 
 
-def sentence(row):
-    return SENTENCES.get(row.verb, row.verb)
+def sentence(row, with_item=True):
+    """The words after the name. On an item's own page the item's name is left off,
+    so "uploaded a new version of" becomes "uploaded a new version"."""
+    words = SENTENCES.get(row.verb, row.verb)
+    if not with_item:
+        for ending in (" of", " to", " into", " from"):
+            if words.endswith(ending):
+                return words[: -len(ending)]
+    return words
 
 
 def who(row, viewer):

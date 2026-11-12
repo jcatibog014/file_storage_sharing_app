@@ -80,6 +80,13 @@ def thumbnail(s, version):
     found = s.get(Thumbnail, version.id)
     if found is not None:
         return s.get(Blob, found.blob_id) if found.blob_id else None
+    # The same picture in another file (a restored version, every demo's sample) has one thumbnail.
+    twin = s.scalar(select(Thumbnail).join(FileVersion, FileVersion.id == Thumbnail.version_id)
+                    .where(FileVersion.blob_id == version.blob_id).limit(1))
+    if twin is not None:
+        s.add(Thumbnail(version_id=version.id, blob_id=twin.blob_id, created_at=utcnow()))
+        s.commit()
+        return s.get(Blob, twin.blob_id) if twin.blob_id else None
     blob = None
     if INLINE_TYPES.get(version.blob.content_type) == "image" and version.size <= THUMB_MAX_SOURCE:
         try:
@@ -107,8 +114,7 @@ def _make_thumbnail(s, version):
         picture.save(out, "WEBP", quality=80)  # a new file: no EXIF, nothing from the original but pixels
     key = storage.new_key("t")
     bucket.put_bytes(key, out.getvalue(), "image/webp")
-    blob = Blob(key=key, size=out.tell(), content_type="image/webp", state="ready", created_at=utcnow(),
-                is_sample=version.blob.is_sample)
+    blob = Blob(key=key, size=out.tell(), content_type="image/webp", state="ready", created_at=utcnow())
     s.add(blob)
     s.flush()
     return blob

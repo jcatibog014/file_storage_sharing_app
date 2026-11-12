@@ -97,7 +97,7 @@ A plain form upload through Flask is the fallback when JavaScript is off. Pendin
 - [x] Stage 5: link controls
 - [x] Stage 6: find & preview
 - [x] Stage 7: activity & security
-- [ ] Stage 8: demo, phone app, deploy, README
+- [x] Stage 8: demo, phone app, deploy, README
 
 ## Stages (one PR, a commit each)
 
@@ -109,7 +109,7 @@ A plain form upload through Flask is the fallback when JavaScript is off. Pendin
 6. **Find & preview.** Search (name, type, owner, in-folder), Starred, Recent (last opened/changed), the preview panel: images (Pillow WebP thumbnails stored as their own blobs), PDF (inline signed URL in an iframe), text/code (first 200 KB, escaped), video/audio (`<video>` with a signed URL). **Download folder as ZIP** streamed with `zipfile`, capped at 500 MB / 1,000 files, and only including what the person may see.
 7. **Activity & security.** Append-only activity log (uploaded, downloaded, previewed, shared, role changed, link opened, renamed, moved, trashed, restored) with an Activity panel per item and a page in Settings. Notifications (a bell in the app + email when someone shares with you). Two-step sign-in with an authenticator app (pyotp, QR by segno, 8 one-time recovery codes). Active sessions with "Log out other devices" (`sessions` table + `session_version`). A new-device login email.
 8. **Demo, phone app, deploy, README.**
-   - **Try Demo** gives each visitor their own drive (owner "Janelle Demo"), with nested folders, photos, PDFs, text, an audio clip, a shared-with-you folder from sample people, a public link with a password and expiry, versions, trash, starred, activity and notifications. The **sample files are generated once** (`docs/make_samples.py`: Pillow images + PDF, text, a WAV tone) and uploaded with `flask upload-samples`. Each demo **points at the same blobs** (ref_count), so a demo uses no extra storage, and demo uploads are limited to 20 MB. A purge runs after 24 h. `tests/test_demo.py` fails if any demo page is empty.
+   - **Try Demo** gives each visitor their own drive (owner "Janelle Demo"), with nested folders, photos, PDFs, text, an audio clip, a shared-with-you folder from sample people, a public link with a password and expiry, versions, trash, starred, activity and notifications. The **sample files are drawn by code** (`jdrive/samples.py`: Pillow pictures and PDFs, text, a WAV tone) and put in the bucket the first time a demo needs them, under fixed keys. Each demo **points at the same blobs** (ref_count), so a demo uses no extra storage, and demo uploads are limited to 20 MB. A purge runs after 24 h. `tests/test_demo.py` fails if any demo page is empty.
    - PWA (install, offline page).
    - `render.yaml` (service `j-drive`) and `docs/DEPLOY.md`: B2 bucket (private) + app key + CORS rule for the Render URL, Brevo key + verified sender, Neon, GitHub secrets `TICK_URL`/`TICK_KEY`.
    - README in simple English with a tools table and screenshots from Try Demo (`docs/take_screenshots.py`, made-up data only), plus `docs/PLAN.md` with a progress list.

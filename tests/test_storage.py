@@ -142,3 +142,16 @@ def test_the_csp_allows_the_bucket_address(tmp_path):
     policy = app.test_client().get("/login").headers["Content-Security-Policy"]
     assert "connect-src 'self' https://s3.us-west-004.backblazeb2.com" in policy
     assert "script-src 'self';" in policy  # scripts still only from this site
+
+
+def test_the_bucket_cors_command(s3, app, monkeypatch):
+    from click.testing import CliRunner
+
+    from jdrive.storage import bucket_cors_command
+    app.extensions["jdrive_bucket"] = s3
+    with app.app_context():
+        result = CliRunner().invoke(bucket_cors_command, ["https://j-drive.onrender.com/"], obj=app)
+    assert result.exit_code == 0, result.output
+    rules = s3.client.get_bucket_cors(Bucket="j-drive")["CORSRules"]
+    assert rules[0]["AllowedOrigins"] == ["https://j-drive.onrender.com"]
+    assert "PUT" in rules[0]["AllowedMethods"]

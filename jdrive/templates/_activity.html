@@ -7,7 +7,7 @@
       <li class="activity-line verb-{{ row.verb }}">
         {% if row.actor %}{{ avatar(row.actor, 'small') }}{% else %}<span class="avatar avatar-small avatar-email" aria-hidden="true">{{ icon('link', 11) }}</span>{% endif %}
         <span class="activity-text">
-          <strong>{{ activity_who(row, g.user) }}</strong> {{ activity_sentence(row) }}
+          <strong>{{ activity_who(row, g.user) }}</strong> {{ activity_sentence(row, show_item) }}
           {% if show_item %}<span class="activity-item">{{ row.item_name }}</span>{% endif %}
           {% if row.detail %}<span class="muted">{{ row.detail }}</span>{% endif %}
           <small title="{{ row.at|nice_datetime }}">{{ row.at|ago }}</small>
