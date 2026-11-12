@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf, avatar %}
+{% from "_items.html" import breadcrumbs, item_menu, type_icon with context %}
+{% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ breadcrumbs(crumbs if crumbs is defined else path) }}
+  <div class="page-head">
+    <div>
+      <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span></h1>
+      <p class="lead">{{ KIND_NAMES[kind_of(item)] }} &middot; {{ item.size|filesize }} &middot; you are {{ access.role_name }}</p>
+    </div>
+    <div class="head-actions">
+      {% block file_actions %}{% endblock %}
+      {{ item_menu(item, access.role, show_download=False) }}
+      <a class="button" href="{{ url_for('drive.download', item_id=item.id) }}">{{ icon('download', 16) }} Download</a>
+    </div>
+  </div>
+
+  <div class="file-layout">
+    <section class="preview-area">
+      {% block preview %}
+        <div class="preview-empty">
+          <span class="type-icon type-{{ kind_of(item) }}">{{ icon(icon_name(item), 72) }}</span>
+          <p>No preview for this kind of file. Download it to open it.</p>
+        </div>
+      {% endblock %}
+    </section>
+    <aside class="side-panel">
+      <section class="card details-card">
+        <h2>Details</h2>
+        <dl class="details">
+          <dt>Type</dt><dd>{{ KIND_NAMES[kind_of(item)] }} <span class="muted small">({{ item.content_type }})</span></dd>
+          <dt>Size</dt><dd>{{ item.size|filesize }}</dd>
+          <dt>Owner</dt><dd>{{ 'You' if item.owner_id == g.user.id else item.owner.name }}</dd>
+          {% if version and version.uploaded_by %}<dt>Uploaded by</dt><dd>{{ 'You' if version.uploaded_by_id == g.user.id else version.uploaded_by.name }}</dd>{% endif %}
+          <dt>Added</dt><dd>{{ item.created_at|nice_datetime }}</dd>
+          <dt>Last changed</dt><dd>{{ item.updated_at|nice_datetime }}</dd>
+        </dl>
+      </section>
+      {% block side_more %}{% endblock %}
+    </aside>
+  </div>
+{% endblock %}

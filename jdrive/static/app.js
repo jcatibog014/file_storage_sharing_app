@@ -194,7 +194,202 @@ function setUpCountdowns() {
   });
 }
 
+// Uploads, the object-storage way. For each file:
+//   1. ask our server for a signed link (POST /api/uploads): it checks the folder, size and space;
+//   2. PUT the file straight to the bucket with that link (with a progress bar);
+//   3. tell our server it's done (POST /api/uploads/<id>/done): it checks the bucket really has it.
+// The file never passes through our server. Without JavaScript, the same form posts to /upload.
+function setUpUploads() {
+  const form = document.querySelector("form[data-upload]");
+  if (!form) return;
+  const input = form.querySelector("[data-upload-input]");
+  const csrf = form.querySelector('[name="csrf_token"]').value;
+  const zone = document.querySelector("[data-drop-zone]");
+  let panel = null;
+  let rows = null;
+
+  const makePanel = () => {
+    if (panel) return;
+    panel = document.createElement("section");
+    panel.className = "upload-panel";
+    panel.setAttribute("aria-live", "polite");
+    const head = document.createElement("div");
+    head.className = "upload-panel-head";
+    head.textContent = "Uploading";
+    panel.append(head);
+    rows = document.createElement("div");
+    rows.className = "upload-rows";
+    panel.append(rows);
+    document.body.append(panel);
+  };
+
+  const makeRow = (file) => {
+    const row = document.createElement("div");
+    row.className = "upload-row";
+    const top = document.createElement("div");
+    top.className = "upload-row-top";
+    const name = document.createElement("span");
+    name.className = "upload-row-name";
+    name.textContent = file.name; // text, never HTML
+    const state = document.createElement("span");
+    state.className = "upload-row-state";
+    state.textContent = "Waiting";
+    top.append(name, state);
+    const bar = document.createElement("div");
+    bar.className = "upload-bar";
+    const fill = document.createElement("span");
+    bar.append(fill);
+    row.append(top, bar);
+    rows.append(row);
+    return {
+      progress(part) {
+        fill.style.width = `${Math.round(part * 100)}%`;
+        state.textContent = `${Math.round(part * 100)}%`;
+      },
+      done() {
+        row.classList.add("is-done");
+        fill.style.width = "100%";
+        state.textContent = "Done";
+      },
+      failed(message) {
+        row.classList.add("is-failed");
+        fill.style.width = "100%";
+        state.textContent = message;
+      },
+    };
+  };
+
+  const askServer = async (url, body) => {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf, Accept: "application/json" },
+      body: JSON.stringify(body),
+      credentials: "same-origin",
+    });
+    let answer = {};
+    try {
+      answer = await response.json();
+    } catch (error) {
+      answer = {};
+    }
+    if (!response.ok || !answer.ok) throw new Error(answer.error || "Something went wrong. Please try again.");
+    return answer;
+  };
+
+  // XMLHttpRequest, not fetch: it reports how much has been sent.
+  const putToBucket = (link, file, row) =>
+    new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open(link.method || "PUT", link.url);
+      Object.entries(link.headers || {}).forEach(([key, value]) => request.setRequestHeader(key, value));
+      request.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) row.progress(event.loaded / event.total);
+      });
+      request.addEventListener("load", () =>
+        request.status >= 200 && request.status < 300
+          ? resolve()
+          : reject(new Error("The storage refused the file. Please try again.")));
+      request.addEventListener("error", () => reject(new Error("The connection dropped. Please try again.")));
+      request.send(file);
+    });
+
+  const uploadOne = async (file) => {
+    const row = makeRow(file);
+    try {
+      const link = await askServer("/api/uploads", {
+        parent_id: form.dataset.parent || "",
+        target_id: form.dataset.target || "",
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+      row.progress(0);
+      await putToBucket(link, file, row);
+      await askServer(`/api/uploads/${link.upload_id}/done`, {});
+      row.done();
+      return true;
+    } catch (error) {
+      row.failed(error.message);
+      return false;
+    }
+  };
+
+  const send = async (fileList) => {
+    const chosen = [...fileList];
+    if (!chosen.length) return;
+    makePanel();
+    // Three at a time: quick, without choking a slow connection.
+    const queue = chosen.slice();
+    const results = [];
+    const worker = async () => {
+      while (queue.length) results.push(await uploadOne(queue.shift()));
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    if (results.every(Boolean)) {
+      window.location.reload();
+    } else {
+      const again = document.createElement("a");
+      again.href = window.location.href;
+      again.className = "link-button";
+      again.textContent = "Refresh";
+      panel.querySelector(".upload-panel-head").append(again);
+    }
+  };
+
+  input.addEventListener("change", () => {
+    send(input.files);
+    input.value = "";
+  });
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    send(input.files);
+  });
+
+  if (zone) {
+    let depth = 0;
+    zone.addEventListener("dragenter", (event) => {
+      if (![...event.dataTransfer.types].includes("Files")) return;
+      depth += 1;
+      zone.classList.add("is-dragging");
+    });
+    zone.addEventListener("dragleave", () => {
+      depth = Math.max(0, depth - 1);
+      if (!depth) zone.classList.remove("is-dragging");
+    });
+    zone.addEventListener("dragover", (event) => event.preventDefault());
+    zone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      depth = 0;
+      zone.classList.remove("is-dragging");
+      send(event.dataTransfer.files);
+    });
+  }
+  // A file dropped anywhere else must not open in the tab (and leave the page).
+  document.addEventListener("dragover", (event) => event.preventDefault());
+  document.addEventListener("drop", (event) => event.preventDefault());
+}
+
+// "New folder": the name box is ready to type over as soon as it opens.
+function setUpSelectOnOpen() {
+  document.querySelectorAll("details").forEach((panel) => {
+    const box = panel.querySelector("[data-select-on-open]");
+    if (!box) return;
+    panel.addEventListener("toggle", () => {
+      if (panel.open) box.select();
+    });
+  });
+  // Rename: select the name without its ending (.pdf), like a computer does.
+  const name = document.querySelector("[data-select-name]");
+  if (name) {
+    const dot = name.value.lastIndexOf(".");
+    name.focus();
+    name.setSelectionRange(0, dot > 0 ? dot : name.value.length);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  setUpUploads();
+  setUpSelectOnOpen();
   setUpToasts();
   setUpWatchChanges();
   setUpInstall();

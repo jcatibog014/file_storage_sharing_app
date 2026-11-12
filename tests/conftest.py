@@ -132,3 +132,30 @@ def text(response):
     """A page's words the way a person reads them (&#39; back to ', &amp; to &)."""
     import html
     return html.unescape(response.get_data(as_text=True))
+
+
+def upload(client, name="notes.txt", data=b"hello", parent_id=None, content_type="text/plain", target_id=None):
+    """Upload the way the browser does: ask for a link, PUT to the bucket, say done.
+    Returns the JSON of the last step."""
+    started = client.post("/api/uploads", json={"parent_id": parent_id or "", "target_id": target_id or "",
+                                                "name": name, "size": len(data), "type": content_type},
+                          headers={"X-CSRF-Token": CSRF})
+    answer = started.get_json()
+    if not answer["ok"]:
+        return answer
+    client.put(answer["url"], data=data, headers=answer["headers"])
+    return client.post(f"/api/uploads/{answer['upload_id']}/done", json={}, headers={"X-CSRF-Token": CSRF}).get_json()
+
+
+def new_folder(client, name="Photos", parent_id=None):
+    """Make a folder through the page. Returns its id."""
+    from jdrive.models import Item
+    post(client, "/folders/new", {"name": name, "parent_id": parent_id or ""})
+    with client.application.app_context():
+        return db.session().scalar(select(Item.id).order_by(Item.id.desc()).limit(1))
+
+
+def get_item(app, item_id):
+    from jdrive.models import Item
+    with app.app_context():
+        return db.session().get(Item, item_id)

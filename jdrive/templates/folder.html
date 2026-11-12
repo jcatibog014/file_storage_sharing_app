@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf %}
+{% from "_items.html" import item_list, item_grid, breadcrumbs, type_icon with context %}
+{% set title = folder.name if folder else 'My Drive' %}
+{% set role = access.role if access else 'owner' %}
+{% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% if folder %}{{ breadcrumbs(crumbs if crumbs is defined else path) }}{% endif %}
+  <div class="page-head">
+    <div>
+      <h1 class="folder-title">{% if folder %}{{ type_icon(folder, 26) }}{% endif %}{{ title }}</h1>
+      {% block folder_lead %}{% endblock %}
+    </div>
+    <div class="head-actions">
+      {% block folder_actions %}{% endblock %}
+      {% if can_add %}
+        <details class="new-panel" data-popover>
+          <summary class="button button-quiet">{{ icon('folder-plus', 16) }} New folder</summary>
+          <form class="new-panel-form stack-tight" method="post" action="{{ url_for('drive.new_folder') }}">
+            {{ csrf() }}
+            <input type="hidden" name="parent_id" value="{{ folder.id if folder else '' }}">
+            <label class="field"><span class="field-label">Folder name</span>
+              <input type="text" name="name" required maxlength="255" value="New folder" data-select-on-open></label>
+            <div class="form-actions"><button class="button" type="submit">Make folder</button></div>
+          </form>
+        </details>
+        {# One form for both ways: without JavaScript it goes through the server;
+           app.js sends each file straight to the bucket with a signed link instead. #}
+        <form class="upload-form" method="post" action="{{ url_for('drive.upload_form') }}" enctype="multipart/form-data"
+              data-upload data-parent="{{ folder.id if folder else '' }}">
+          {{ csrf() }}
+          <input type="hidden" name="parent_id" value="{{ folder.id if folder else '' }}">
+          <label class="button upload-button">
+            {{ icon('upload', 16) }} Upload
+            <input class="upload-input" type="file" name="files" multiple data-upload-input>
+          </label>
+          <button class="button no-js-only" type="submit">Send files</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="list-tools">
+    <form method="get" class="sort-form">
+      <label class="visually-hidden" for="sort">Sort by</label>
+      <select id="sort" name="sort" data-auto-submit>
+        {% for key, label in [('name', 'Name'), ('modified', 'Last changed'), ('size', 'Size')] %}
+          <option value="{{ key }}"{% if sort == key %} selected{% endif %}>Sort by {{ label|lower }}</option>
+        {% endfor %}
+      </select>
+      <select name="order" aria-label="Order" data-auto-submit>
+        <option value="asc"{% if not descending %} selected{% endif %}>{{ 'A to Z' if sort == 'name' else ('Oldest first' if sort == 'modified' else 'Smallest first') }}</option>
+        <option value="desc"{% if descending %} selected{% endif %}>{{ 'Z to A' if sort == 'name' else ('Newest first' if sort == 'modified' else 'Biggest first') }}</option>
+      </select>
+      <button class="button button-quiet button-small" type="submit" data-auto-submit-button>Sort</button>
+    </form>
+    <div class="view-switch" role="group" aria-label="Show as">
+      <a class="icon-button{% if view == 'list' %} is-on{% endif %}" href="?{{ {'view': 'list', 'sort': sort, 'order': 'desc' if descending else 'asc'}|urlencode }}" title="List"{% if view == 'list' %} aria-current="true"{% endif %}><span class="visually-hidden">List</span>{{ icon('list') }}</a>
+      <a class="icon-button{% if view == 'grid' %} is-on{% endif %}" href="?{{ {'view': 'grid', 'sort': sort, 'order': 'desc' if descending else 'asc'}|urlencode }}" title="Grid"{% if view == 'grid' %} aria-current="true"{% endif %}><span class="visually-hidden">Grid</span>{{ icon('grid') }}</a>
+    </div>
+  </div>
+
+  <div class="drop-zone"{% if can_add %} data-drop-zone{% endif %}>
+    {% if items %}
+      {% if view == 'grid' %}{{ item_grid(items, role) }}{% else %}{{ item_list(items, role, sort, descending, show_owner=show_owner|default(False)) }}{% endif %}
+    {% else %}
+      <div class="empty-state">
+        {{ icon('folder', 56) }}
+        <h2>{{ 'Nothing Here Yet' if folder else 'Your Drive Is Empty' }}</h2>
+        <p>{% if can_add %}Drop files here, or press Upload.{% else %}When files are added, they show here.{% endif %}</p>
+      </div>
+    {% endif %}
+    {% if can_add %}<div class="drop-hint" aria-hidden="true">{{ icon('upload', 40) }} Drop to upload</div>{% endif %}
+  </div>
+{% endblock %}

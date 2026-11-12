@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Rename - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <section class="card narrow">
+    <h1 class="card-heading">Rename</h1>
+    <form method="post" class="stack">
+      {{ csrf() }}
+      {{ field('name', 'New name', request.form.get('name', item.name), error, attrs='required maxlength="255" autofocus data-select-name') }}
+      <div class="form-actions">
+        <a class="button button-quiet" href="{{ parent_url(item) }}">Cancel</a>
+        <button class="button" type="submit">Save name</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

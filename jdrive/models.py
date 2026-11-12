@@ -5,7 +5,7 @@ Times are naive UTC (dates.utcnow()).
 """
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, false, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -74,3 +74,102 @@ class RateLimit(Base):
     key: Mapped[str] = mapped_column(String(200), primary_key=True)
     count: Mapped[int] = mapped_column(Integer, default=0)
     window_start: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+# ---------- Files and folders ----------
+
+FOLDER = "folder"
+FILE = "file"
+
+
+class Blob(Base):
+    """One object in the bucket. Its key is random ("b/<32 hex>"), never the
+    file's name, so a key says nothing about the file and can't be guessed.
+
+    A blob starts "pending" when an upload begins and becomes "ready" once we
+    have checked that the object really arrived with the promised size. Blobs
+    are shared: two versions (a restored old version, or every demo's copy of a
+    sample file) can point at the same blob, so a blob is only deleted from the
+    bucket when nothing points at it any more (files.sweep_blobs)."""
+    __tablename__ = "blobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(100), unique=True)
+    size: Mapped[int] = mapped_column(BigInteger, default=0)
+    content_type: Mapped[str] = mapped_column(String(120))
+    state: Mapped[str] = mapped_column(String(10), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    # Sample files for Try Demo: kept for good, whoever points at them.
+    is_sample: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+
+
+class Item(Base):
+    """A file or a folder. One table for both, because they live in the same
+    tree: parent_id is the folder it is in (None = the top of its owner's
+    My Drive). Deleting a folder deletes everything in it (ON DELETE CASCADE).
+
+    owner_id is the owner of the whole tree: a file an Editor uploads into a
+    shared folder still belongs to the folder's owner (and counts towards the
+    owner's storage), the way OneDrive does it. created_by_id remembers who
+    really added it."""
+    __tablename__ = "items"
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    name: Mapped[str] = mapped_column(String(255))
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+    # Files only: a copy of the current version's size and type, for quick lists.
+    size: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    content_type: Mapped[str | None] = mapped_column(String(120))
+
+    owner: Mapped[User] = relationship(foreign_keys=[owner_id])
+    created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])
+
+    @property
+    def is_folder(self):
+        return self.kind == FOLDER
+
+
+class FileVersion(Base):
+    """One version of a file. The newest (highest number) is the current one."""
+    __tablename__ = "file_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    number: Mapped[int] = mapped_column(Integer)
+    # RESTRICT: a blob can't vanish while a version still points at it.
+    blob_id: Mapped[int] = mapped_column(ForeignKey("blobs.id", ondelete="RESTRICT"), index=True)
+    size: Mapped[int] = mapped_column(BigInteger)
+    uploaded_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+    blob: Mapped[Blob] = relationship()
+    uploaded_by: Mapped[User | None] = relationship()
+
+
+class Upload(Base):
+    """An upload that has started: the browser was given a signed link to put
+    the file straight into the bucket, and will tell us when it is done
+    (files.finish_upload). Unfinished ones run out after an hour (tick.py)."""
+    __tablename__ = "uploads"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    blob_id: Mapped[int] = mapped_column(ForeignKey("blobs.id", ondelete="CASCADE"), index=True)
+    # Where the new file goes (None = the top of the owner's My Drive)...
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # ...or which file it is a new version of.
+    target_item_id: Mapped[int | None] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    size: Mapped[int] = mapped_column(BigInteger)
+    content_type: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+    blob: Mapped[Blob] = relationship()
