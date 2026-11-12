@@ -116,10 +116,7 @@ def add_people(s, actor, item, emails, role, moment, note=""):
     return added, updated
 
 
-def a_role(role):
-    """"a Viewer", "an Editor", "a Co-owner"."""
-    name = permissions.ROLE_NAMES[role]
-    return ("an " if name[0] in "AEIOU" else "a ") + name
+a_role = permissions.a_role
 
 
 def _send_invite(actor, item, share, person, note):
@@ -151,9 +148,11 @@ def claim_waiting(s, user, moment):
 def shared_with_me(s, user):
     """(share, item) for everything shared directly with this person, newest first."""
     rows = s.execute(select(Share, Item).join(Item, Item.id == Share.item_id)
-                     .where(Share.user_id == user.id, Item.owner_id != user.id)
+                     .where(Share.user_id == user.id, Item.owner_id != user.id, Item.trashed_at.is_(None))
                      .order_by(Share.created_at.desc(), Share.id.desc())).all()
-    return [(share, item) for share, item in rows]
+    # Something inside a folder that is in the Trash is hidden too.
+    return [(share, item) for share, item in rows
+            if item.parent_id is None or not any(step.trashed_at for step in tree.ancestors(s, item.parent_id))]
 
 
 def transfer(s, actor, item, new_owner_share, moment):

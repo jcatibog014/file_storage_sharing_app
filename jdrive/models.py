@@ -34,6 +34,8 @@ class User(Base):
     # Try Demo: each visitor gets their own sample people, deleted at demo_expires_at.
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     demo_expires_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    # How much the files they own may take (every version and the trash count too).
+    quota_bytes: Mapped[int] = mapped_column(BigInteger, default=1_000_000_000, server_default="1000000000")
 
     @property
     def is_verified(self):
@@ -126,9 +128,14 @@ class Item(Base):
     # Files only: a copy of the current version's size and type, for quick lists.
     size: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     content_type: Mapped[str | None] = mapped_column(String(120))
+    # In the Trash since then (only the item that was moved there; what is inside
+    # a trashed folder goes with it). Deleted for good after 30 days.
+    trashed_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    trashed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
 
     owner: Mapped[User] = relationship(foreign_keys=[owner_id])
     created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])
+    trashed_by: Mapped[User | None] = relationship(foreign_keys=[trashed_by_id])
 
     @property
     def is_folder(self):

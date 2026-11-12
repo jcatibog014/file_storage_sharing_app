@@ -43,9 +43,12 @@ def _show(s, link, token, path):
 def link(token):
     s = db.session()
     link = _link_or_404(s, token)
+    path = links.path_inside(s, link, link.item_id)
+    if path is None:
+        abort(404)  # in the Trash
     link.open_count += 1
     s.commit()
-    return _show(s, link, token, [link.item])
+    return _show(s, link, token, path)
 
 
 @bp.get("/s/<token>/i/<int:item_id>")

@@ -27,6 +27,8 @@ from .models import FILE, FOLDER, Blob, FileVersion, Item, Upload
 MAX_FILE_SIZE = 100 * 1000 * 1000   # 100 MB per file
 NAME_MAX_LENGTH = 255
 UPLOAD_LIFETIME = timedelta(hours=1)
+TRASH_DAYS = 30                     # the Trash deletes things for good after this
+MAX_VERSIONS = 10                   # older versions than this are deleted
 MAX_OPEN_UPLOADS = 50               # started but not finished, per person
 FALLBACK_TYPE = "application/octet-stream"
 TYPE_PATTERN = re.compile(r"[a-z0-9][a-z0-9!#$&^_.+-]{0,62}/[a-z0-9][a-z0-9!#$&^_.+-]{0,62}")
@@ -102,8 +104,9 @@ def icon_name(item):
 
 def unique_name(s, owner_id, parent_id, name, skip_id=None):
     """The name, or "name (1).ext", "name (2).ext"... if the folder already has it."""
-    siblings = select(func.lower(Item.name)).where(Item.owner_id == owner_id, Item.parent_id.is_(parent_id)
-                                                   if parent_id is None else Item.parent_id == parent_id)
+    siblings = select(func.lower(Item.name)).where(Item.owner_id == owner_id, Item.trashed_at.is_(None),
+                                                   Item.parent_id.is_(parent_id) if parent_id is None
+                                                   else Item.parent_id == parent_id)
     if skip_id is not None:
         siblings = siblings.where(Item.id != skip_id)
     taken = set(s.scalars(siblings))
@@ -124,12 +127,23 @@ SORTS = {"name": "Name", "modified": "Last changed", "size": "Size"}
 
 def children(s, owner_id, parent_id, sort="name", descending=False):
     """What is in a folder (or the top of a My Drive): folders first, then files."""
-    query = select(Item).where(Item.owner_id == owner_id)
+    query = select(Item).where(Item.owner_id == owner_id, Item.trashed_at.is_(None))
     query = query.where(Item.parent_id.is_(None)) if parent_id is None else query.where(Item.parent_id == parent_id)
     column = {"modified": Item.updated_at, "size": Item.size}.get(sort, func.lower(Item.name))
     order = column.desc() if descending else column.asc()
     folders_first = (Item.kind != FOLDER)  # False (folders) sorts before True
     return list(s.scalars(query.order_by(folders_first, order, Item.id)))
+
+
+def is_trashed(path):
+    """Is anything on the path (the item or a folder above it) in the Trash?"""
+    return any(item.trashed_at is not None for item in path)
+
+
+def versions(s, item):
+    """Newest first."""
+    return list(s.scalars(select(FileVersion).where(FileVersion.item_id == item.id)
+                          .order_by(FileVersion.number.desc())))
 
 
 def current_version(s, item):
@@ -239,7 +253,46 @@ def _add_file(s, user, owner_id, parent_id, target_id, name, blob, moment):
     s.add(FileVersion(item_id=item.id, number=number, blob_id=blob.id, size=blob.size,
                       uploaded_by_id=user.id, created_at=moment))
     s.flush()
+    _trim_versions(s, item)
     return item
+
+
+def _trim_versions(s, item):
+    """Keep the newest MAX_VERSIONS. The old blobs are swept by the timer (or now, by the caller)."""
+    old = versions(s, item)[MAX_VERSIONS:]
+    for version in old:
+        s.info.setdefault("sweep_blob_ids", []).append(version.blob_id)
+        s.delete(version)
+    if old:
+        s.flush()
+
+
+def sweep_after_commit(s):
+    """Sweep the blobs this request let go of (old versions trimmed)."""
+    blob_ids = s.info.pop("sweep_blob_ids", [])
+    if blob_ids:
+        sweep_blobs(s, blob_ids)
+
+
+def restore_version(s, user, item, version, moment):
+    """Make an old version the current one again: a NEW version pointing at the
+    same blob (nothing is copied, and the history stays complete)."""
+    if version.item_id != item.id:
+        raise Problem("That version belongs to another file.")
+    check_space(s, item.owner_id, version.size)
+    return _add_file(s, user, item.owner_id, item.parent_id, item.id, item.name, version.blob, moment)
+
+
+def delete_version(s, item, version):
+    """Delete one old version (never the current one). Returns its blob id to sweep."""
+    if version.item_id != item.id:
+        raise Problem("That version belongs to another file.")
+    if version.id == current_version(s, item).id:
+        raise Problem("That's the current version. Upload or restore another one first.")
+    blob_id = version.blob_id
+    s.delete(version)
+    s.flush()
+    return blob_id
 
 
 def upload_through_server(s, user, owner_id, parent, file_storage, moment, target=None):
@@ -299,6 +352,51 @@ def move(s, item, target, moment):
     return item
 
 
+# ---------- The Trash ----------
+
+def trash(s, user, item, moment):
+    """Into the Trash: hidden from every list and page (with everything inside it),
+    but still taking space, until it is restored or deleted for good."""
+    item.trashed_at = moment
+    item.trashed_by_id = user.id
+    s.flush()
+
+
+def restore(s, item, moment):
+    """Out of the Trash, back where it was. If its folder is gone or in the
+    Trash itself, it goes to the top of the owner's My Drive instead.
+    Returns True if it went back to its own folder."""
+    back_home = True
+    if item.parent_id is not None and is_trashed(tree.ancestors(s, item.parent_id)):
+        item.parent_id = None
+        back_home = False
+    item.trashed_at = None
+    item.trashed_by_id = None
+    item.name = unique_name(s, item.owner_id, item.parent_id, item.name, skip_id=item.id)
+    item.updated_at = moment
+    s.flush()
+    return back_home
+
+
+def trashed_items(s, user):
+    """The Trash page: what you own that is in the Trash, and what you put there yourself."""
+    return list(s.scalars(select(Item).where(Item.trashed_at.is_not(None),
+                                             (Item.owner_id == user.id) | (Item.trashed_by_id == user.id))
+                          .order_by(Item.trashed_at.desc(), Item.id)))
+
+
+def purge_trash(s, moment, owner_id=None):
+    """Delete for good what has been in the Trash for TRASH_DAYS. Returns blob ids to sweep."""
+    query = select(Item).where(Item.trashed_at <= moment - timedelta(days=TRASH_DAYS))
+    if owner_id is not None:
+        query = query.where(Item.owner_id == owner_id)
+    blob_ids = []
+    for item in list(s.scalars(query.limit(200))):
+        if s.get(Item, item.id) is not None:  # not already gone with a folder above it
+            blob_ids += delete_forever(s, item)
+    return blob_ids
+
+
 def delete_forever(s, item):
     """Delete an item (and, for a folder, everything in it). Returns the blob ids
     it used: after the commit, sweep_blobs deletes those nothing else uses."""
@@ -309,6 +407,12 @@ def delete_forever(s, item):
     return blob_ids
 
 
+def thumb_use():
+    """Blobs used as picture thumbnails count as in use too (stage 6 fills this in)."""
+    from sqlalchemy import false as sql_false
+    return sql_false()
+
+
 def sweep_blobs(s, blob_ids=None):
     """Delete objects that nothing points at any more, first from the bucket,
     then their rows. Sample files are kept. Commits as it goes; if the bucket
@@ -316,7 +420,7 @@ def sweep_blobs(s, blob_ids=None):
     bucket = storage.get()
     in_use = exists().where(FileVersion.blob_id == Blob.id)
     waiting = exists().where(Upload.blob_id == Blob.id)
-    query = select(Blob).where(~in_use, ~waiting, Blob.is_sample.is_(False))
+    query = select(Blob).where(~in_use, ~waiting, ~thumb_use(), Blob.is_sample.is_(False))
     if blob_ids is not None:
         if not blob_ids:
             return 0
@@ -339,4 +443,5 @@ def expire_uploads(s, moment):
 
 
 def init_app(app):
-    app.jinja_env.globals.update(kind_of=kind_of, icon_name=icon_name, KIND_NAMES=KIND_NAMES)
+    app.jinja_env.globals.update(kind_of=kind_of, icon_name=icon_name, KIND_NAMES=KIND_NAMES,
+                                 MAX_VERSIONS=MAX_VERSIONS, TRASH_DAYS=TRASH_DAYS)

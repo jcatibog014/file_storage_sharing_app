@@ -41,6 +41,53 @@
           <dt>Last changed</dt><dd>{{ item.updated_at|nice_datetime }}</dd>
         </dl>
       </section>
+      <section class="card versions-card">
+        <div class="card-head">
+          <h2>Versions</h2>
+          {% if access.can('new_version') %}
+            <form class="upload-form" method="post" action="{{ url_for('drive.upload_form') }}" enctype="multipart/form-data"
+                  data-upload data-target="{{ item.id }}">
+              {{ csrf() }}
+              <input type="hidden" name="target_id" value="{{ item.id }}">
+              <label class="button button-quiet button-small upload-button">
+                {{ icon('upload', 14) }} Upload new version
+                <input class="upload-input" type="file" name="files" data-upload-input>
+              </label>
+              <button class="button button-small no-js-only" type="submit">Send</button>
+            </form>
+          {% endif %}
+        </div>
+        <ol class="versions">
+          {% for v in versions %}
+            <li class="version{% if loop.first %} is-current{% endif %}">
+              <div class="version-text">
+                <strong>Version {{ v.number }}</strong>{% if loop.first %} <span class="badge badge-accent">Current</span>{% endif %}
+                <small>{{ v.created_at|nice_datetime }} &middot; {{ v.size|filesize }}{% if v.uploaded_by %} &middot; {{ 'you' if v.uploaded_by_id == g.user.id else v.uploaded_by.first_name }}{% endif %}</small>
+              </div>
+              {% if not loop.first %}
+                <details class="item-menu" data-popover>
+                  <summary class="icon-button" title="More for version {{ v.number }}"><span class="visually-hidden">More for version {{ v.number }}</span>{{ icon('more') }}</summary>
+                  <div class="menu-items">
+                    <a href="{{ url_for('drive.download_version', item_id=item.id, version_id=v.id) }}">{{ icon('download', 16) }} Download</a>
+                    {% if access.can('new_version') %}
+                      <form method="post" action="{{ url_for('drive.restore_version', item_id=item.id, version_id=v.id) }}">
+                        {{ csrf() }}<button type="submit">{{ icon('restore', 16) }} Make current</button>
+                      </form>
+                    {% endif %}
+                    {% if access.can('delete_version') %}
+                      <form method="post" action="{{ url_for('drive.delete_version', item_id=item.id, version_id=v.id) }}"
+                            data-confirm="Delete version {{ v.number }} for good?">
+                        {{ csrf() }}<button type="submit" class="danger">{{ icon('trash', 16) }} Delete</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </details>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        <p class="muted small">The newest {{ MAX_VERSIONS }} are kept.</p>
+      </section>
       {% block side_more %}{% endblock %}
     </aside>
   </div>

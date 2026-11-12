@@ -104,6 +104,7 @@ def file(item_id):
     version = files.current_version(s, access.item)
     crumbs, crumb_top = crumbs_for(s, access)
     return render_template("file.html", access=access, item=access.item, path=access.path, version=version,
+                           versions=files.versions(s, access.item),
                            crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
 
@@ -148,22 +149,34 @@ def new_folder():
 def upload_form():
     """The no-JavaScript upload: files come through the server."""
     s = db.session()
-    owner_id, parent = place(s, request.form.get("parent_id"), "upload")
+    target = None
+    if request.form.get("target_id"):
+        target = permissions.require(s, g.user, request.form.get("target_id", type=int) or 0, "new_version",
+                                     kind=FILE).item
+        owner_id, parent = target.owner_id, None
+    else:
+        owner_id, parent = place(s, request.form.get("parent_id"), "upload")
+    back = item_url(target or parent)
     chosen = [f for f in request.files.getlist("files") if f and f.filename]
     if not chosen:
         flash("Choose a file to upload first.", "error")
-        return redirect(item_url(parent))
+        return redirect(back)
+    if target is not None:
+        chosen = chosen[:1]  # one new version at a time
     done = []
     for file_storage in chosen:
         try:
-            done.append(files.upload_through_server(s, g.user, owner_id, parent, file_storage, utcnow()))
+            done.append(files.upload_through_server(s, g.user, owner_id, parent, file_storage, utcnow(), target=target))
             s.commit()
+            files.sweep_after_commit(s)
         except files.Problem as problem:
             s.rollback()
             flash(f"{file_storage.filename}: {problem}", "error")
-    if done:
+    if done and target is not None:
+        flash("Uploaded a new version.")
+    elif done:
         flash(f"Uploaded {done[0].name}." if len(done) == 1 else f"Uploaded {len(done)} files.")
-    return redirect(item_url(parent))
+    return redirect(back)
 
 
 @bp.route("/items/<int:item_id>/rename", methods=["GET", "POST"])
@@ -224,18 +237,152 @@ def move(item_id):
                            folders=folders, problem=problem, can_go_top=item.owner_id == g.user.id)
 
 
+@bp.post("/items/<int:item_id>/trash")
+@login_required
+def trash(item_id):
+    s = db.session()
+    access = permissions.require(s, g.user, item_id, "trash")
+    item = access.item
+    back = parent_url(item)
+    files.trash(s, g.user, item, utcnow())
+    s.commit()
+    flash(f"Moved {item.name} to the Trash. It is deleted for good after {files.TRASH_DAYS} days.")
+    return redirect(back)
+
+
+def _trashed_or_404(s, item_id, action):
+    """A Trash button: the item must be the one in the Trash (not something inside it)."""
+    access = permissions.require(s, g.user, item_id, "view", allow_trashed=True)
+    item = access.item
+    if item.trashed_at is None:
+        abort(404)
+    # Restoring: Co-owners and the Owner, and whoever put it there.
+    if not access.can(action) and not (action == "restore" and item.trashed_by_id == g.user.id):
+        abort(403, "Only the owner can do that.")
+    return item
+
+
+@bp.post("/items/<int:item_id>/restore")
+@login_required
+def restore(item_id):
+    s = db.session()
+    item = _trashed_or_404(s, item_id, "restore")
+    back_home = files.restore(s, item, utcnow())
+    s.commit()
+    if back_home:
+        flash(f"Restored {item.name}.")
+    else:
+        whose = "your" if item.owner_id == g.user.id else "the owner's"
+        flash(f"Restored {item.name} to the top of {whose} My Drive, because its folder is gone.")
+    return redirect(url_for("drive.trash_page"))
+
+
 @bp.post("/items/<int:item_id>/delete")
 @login_required
 def delete(item_id):
+    """Delete for good: only from the Trash, only the Owner."""
     s = db.session()
-    access = permissions.require(s, g.user, item_id, "delete_forever")
-    item = access.item
-    name, back = item.name, parent_url(item)
+    item = _trashed_or_404(s, item_id, "delete_forever")
+    name = item.name
     blob_ids = files.delete_forever(s, item)
     s.commit()
     files.sweep_blobs(s, blob_ids)
-    flash(f"Deleted {name}.")
-    return redirect(back)
+    flash(f"Deleted {name} for good.")
+    return redirect(url_for("drive.trash_page"))
+
+
+@bp.get("/trash")
+@login_required
+def trash_page():
+    s = db.session()
+    # Your own old things go now, without waiting for the timer.
+    blob_ids = files.purge_trash(s, utcnow(), owner_id=g.user.id)
+    if blob_ids:
+        s.commit()
+        files.sweep_blobs(s, blob_ids)
+    rows = []
+    for item in files.trashed_items(s, g.user):
+        days_left = max(0, files.TRASH_DAYS - (utcnow() - item.trashed_at).days)
+        rows.append((item, days_left))
+    return render_template("trash.html", rows=rows, menu_here="trash",
+                           has_own=any(item.owner_id == g.user.id for item, _ in rows))
+
+
+@bp.post("/trash/empty")
+@login_required
+def empty_trash():
+    s = db.session()
+    blob_ids = []
+    count = 0
+    for item in files.trashed_items(s, g.user):
+        if item.owner_id == g.user.id and s.get(Item, item.id) is not None:
+            blob_ids += files.delete_forever(s, item)
+            count += 1
+    s.commit()
+    files.sweep_blobs(s, blob_ids)
+    if count:
+        flash(f"Deleted {count} {'thing' if count == 1 else 'things'} for good.")
+    else:
+        flash("The Trash was already empty.")
+    return redirect(url_for("drive.trash_page"))
+
+
+# ---------- Versions ----------
+
+def _version_or_404(s, access, version_id):
+    from ..models import FileVersion
+    version = s.get(FileVersion, version_id)
+    if version is None or version.item_id != access.item.id:
+        abort(404)
+    return version
+
+
+@bp.get("/files/<int:item_id>/versions/<int:version_id>/download")
+@login_required
+def download_version(item_id, version_id):
+    s = db.session()
+    access = permissions.require(s, g.user, item_id, "download", kind=FILE)
+    version = _version_or_404(s, access, version_id)
+    stem, dot, ending = access.item.name.rpartition(".")
+    if dot and stem:
+        name = f"{stem} (version {version.number}).{ending}"
+    else:
+        name = f"{access.item.name} (version {version.number})"
+    return redirect(storage.get().presign_get(version.blob.key, name, version.blob.content_type))
+
+
+@bp.post("/files/<int:item_id>/versions/<int:version_id>/restore")
+@login_required
+def restore_version(item_id, version_id):
+    s = db.session()
+    access = permissions.require(s, g.user, item_id, "new_version", kind=FILE)
+    version = _version_or_404(s, access, version_id)
+    try:
+        files.restore_version(s, g.user, access.item, version, utcnow())
+    except files.Problem as problem:
+        flash(str(problem), "error")
+        return redirect(url_for("drive.file", item_id=item_id))
+    s.commit()
+    files.sweep_after_commit(s)
+    flash(f"Version {version.number} is the current one again.")
+    return redirect(url_for("drive.file", item_id=item_id))
+
+
+@bp.post("/files/<int:item_id>/versions/<int:version_id>/delete")
+@login_required
+def delete_version(item_id, version_id):
+    s = db.session()
+    access = permissions.require(s, g.user, item_id, "delete_version", kind=FILE)
+    version = _version_or_404(s, access, version_id)
+    try:
+        blob_id = files.delete_version(s, access.item, version)
+    except files.Problem as problem:
+        flash(str(problem), "error")
+        return redirect(url_for("drive.file", item_id=item_id))
+    s.commit()
+    files.sweep_blobs(s, [blob_id])
+    flash(f"Deleted version {version.number}.")
+    return redirect(url_for("drive.file", item_id=item_id))
 
 
 # ---------- The upload API (app.js) ----------
@@ -297,6 +444,7 @@ def api_finish_upload(upload_id):
         files.sweep_blobs(s, [blob_id])
         return json_problem(str(problem))
     s.commit()
+    files.sweep_after_commit(s)
     return jsonify({"ok": True, "item": {"id": item.id, "name": item.name, "url": item_url(item)}})
 
 

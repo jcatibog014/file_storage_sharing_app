@@ -92,6 +92,6 @@ def path_inside(s, link, item_id):
     """The path from the linked item down to item_id, or None if item_id isn't inside the link's tree."""
     path = tree.ancestors(s, item_id)
     ids = [item.id for item in path]
-    if link.item_id not in ids:
-        return None
+    if link.item_id not in ids or any(item.trashed_at is not None for item in path):
+        return None  # outside the link's tree, or in the Trash
     return path[ids.index(link.item_id):]

@@ -13,11 +13,11 @@
       {% if role_allows(role, 'share') %}<a href="{{ url_for('share.page', item_id=item.id) }}">{{ icon('share', 16) }} Share</a>{% endif %}
       {% if role_allows(role, 'rename') %}<a href="{{ url_for('drive.rename', item_id=item.id) }}">{{ icon('pencil', 16) }} Rename</a>{% endif %}
       {% if role_allows(role, 'move') %}<a href="{{ url_for('drive.move', item_id=item.id) }}">{{ icon('move', 16) }} Move</a>{% endif %}
-      {% if role_allows(role, 'delete_forever') %}
-        <form method="post" action="{{ url_for('drive.delete', item_id=item.id) }}"
-              data-confirm="Delete {{ item.name }}{{ ' and everything in it' if item.is_folder }}? This can't be undone.">
+      {% if role_allows(role, 'trash') %}
+        <hr>
+        <form method="post" action="{{ url_for('drive.trash', item_id=item.id) }}">
           {{ csrf() }}
-          <button type="submit" class="danger">{{ icon('trash', 16) }} Delete</button>
+          <button type="submit" class="danger">{{ icon('trash', 16) }} Move to trash</button>
         </form>
       {% endif %}
     </div>

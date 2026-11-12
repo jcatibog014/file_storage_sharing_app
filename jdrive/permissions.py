@@ -38,9 +38,16 @@ NEEDS = {
     "trash": EDITOR,
     "share": COOWNER,
     "restore": COOWNER,
+    "delete_version": COOWNER,
     "delete_forever": OWNER,
     "transfer": OWNER,
 }
+
+
+def a_role(role):
+    """"a Viewer", "an Editor", "a Co-owner", "an Owner"."""
+    name = ROLE_NAMES[role]
+    return ("an " if name[0] in "AEIOU" else "a ") + name
 
 
 def allows(role, action):
@@ -87,32 +94,41 @@ class Access:
         return ROLE_NAMES[self.role]
 
 
-def check(s, user, item_id, action="view"):
+def _trashed(path):
+    return any(step.trashed_at is not None for step in path)
+
+
+def check(s, user, item_id, action="view", allow_trashed=False):
     """An Access if allowed, or None. Never raises."""
     item = s.get(Item, item_id) if item_id is not None else None
     if item is None:
         return None
     path = tree.ancestors(s, item.id)
+    if _trashed(path) and not allow_trashed:
+        return None
     role = role_on_path(s, user, path)
     if role is None or not allows(role, action):
         return None
     return Access(item, path, role)
 
 
-def require(s, user, item_id, action="view", kind=None):
+def require(s, user, item_id, action="view", kind=None, allow_trashed=False):
     """The gate for every page and form about one item.
 
-    404 when the person can't see the item at all (or it is the wrong kind),
-    403 when they can see it but their role isn't enough for the action."""
+    404 when the person can't see the item at all (or it is the wrong kind, or
+    in the Trash), 403 when they can see it but their role isn't enough for the
+    action. Only the Trash page's own buttons pass allow_trashed."""
     item = s.get(Item, item_id) if item_id is not None else None
     if item is None or (kind is not None and item.kind != kind):
         abort(404)
     path = tree.ancestors(s, item.id)
+    if _trashed(path) and not allow_trashed:
+        abort(404)
     role = role_on_path(s, user, path)
     if role is None:
         abort(404)
     if not allows(role, action):
-        abort(403, f"You're a {ROLE_NAMES[role]} here, so you can't do that. Ask the owner.")
+        abort(403, f"You're {a_role(role)} here, so you can't do that. Ask the owner.")
     return Access(item, path, role)
 
 

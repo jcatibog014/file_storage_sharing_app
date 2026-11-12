@@ -182,6 +182,8 @@ def test_delete_removes_the_tree_and_the_objects(app):
     upload(client, "b.txt", b"bbb", parent_id=inner)
     keys = bucket_keys(app)
     assert len(keys) == 2
+    post(client, f"/items/{top}/trash")
+    assert len(_all_items(app)) == 4 and bucket_keys(app) == keys  # in the Trash, still there
     post(client, f"/items/{top}/delete")
     assert _all_items(app) == []
     assert bucket_keys(app) == set()
@@ -199,6 +201,7 @@ def test_a_shared_blob_stays_while_something_uses_it(app, ctx):
     ctx.flush()
     ctx.add(FileVersion(item_id=other.id, number=1, blob_id=blob_id, size=3, created_at=utcnow()))
     ctx.commit()
+    post(client, f"/items/{first}/trash")
     post(client, f"/items/{first}/delete")
     key = ctx.scalar(select(Blob.key).where(Blob.id == blob_id))
     assert key is not None and object_exists(app, key)
@@ -225,7 +228,8 @@ def test_strangers_get_404_for_everything(app):
                 f"/items/{file_id}/rename", f"/items/{file_id}/move", f"/folders/{file_id}", f"/files/{folder_id}",
                 "/folders/999999"):
         assert jose.get(url).status_code == 404, url
-    for url, data in ((f"/items/{file_id}/rename", {"name": "x"}), (f"/items/{file_id}/delete", {}),
+    for url, data in ((f"/items/{file_id}/rename", {"name": "x"}), (f"/items/{file_id}/trash", {}),
+                      (f"/items/{file_id}/delete", {}), (f"/items/{file_id}/restore", {}),
                       ("/folders/new", {"parent_id": folder_id, "name": "x"})):
         assert post(jose, url, data).status_code == 404, url
     answer = jose.post("/api/uploads", json={"parent_id": folder_id, "name": "x.txt", "size": 1},

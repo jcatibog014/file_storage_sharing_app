@@ -19,7 +19,16 @@
       <ul class="side-links">
         {{ link('drive.home', 'My Drive', 'drive', active=(menu_here or page) in ('drive.home', 'my-drive')) }}
         {{ link('share.shared_with_me', 'Shared With Me', 'people', active=menu_here == 'shared') }}
+        {{ link('drive.trash_page', 'Trash', 'trash', active=menu_here == 'trash') }}
       </ul>
+      {# How much space the files take: every version and the Trash count. #}
+      {% set used, limit, percent = storage_usage(g.user) %}
+      <div class="space{% if percent >= 90 %} is-full{% endif %}">
+        <div class="space-bar" role="progressbar" aria-label="Storage used" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+          <span class="space-fill w-{{ (percent // 5) * 5 }}"></span>
+        </div>
+        <p>{{ used|filesize }} of {{ limit|filesize }} used</p>
+      </div>
     </nav>
     <div class="sidebar-foot">
       {% if g.user.is_demo %}<a class="demo-signup" href="{{ url_for('auth.signup') }}">Sign up for real</a>{% endif %}

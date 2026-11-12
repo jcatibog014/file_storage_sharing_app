@@ -13,7 +13,7 @@ def test_the_rule_table():
         "viewer": {"view", "download"},
         "editor": {"view", "download", "upload", "new_folder", "rename", "move", "new_version", "trash"},
         "coowner": {"view", "download", "upload", "new_folder", "rename", "move", "new_version", "trash",
-                    "share", "restore"},
+                    "share", "restore", "delete_version"},
         "owner": set(permissions.NEEDS),
     }
     for role, allowed in table.items():
@@ -71,7 +71,7 @@ def test_who_can_do_what(app, team, role):
         ("rename", "editor", lambda: post(client, f"/items/{inner_id}/rename", {"name": f"Inner {role}"}).status_code),
         ("move", "editor", lambda: client.get(f"/items/{file_id}/move").status_code),
         ("share page", "coowner", lambda: client.get(f"/items/{team_id}/share").status_code),
-        ("delete for good", "owner", lambda: post(client, f"/items/{inner_id}/delete").status_code),
+        ("move to trash", "editor", lambda: post(client, f"/items/{inner_id}/trash").status_code),
     ]
     for name, least, run in checks:
         got = outcome(run())
