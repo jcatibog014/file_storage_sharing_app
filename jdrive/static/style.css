@@ -640,3 +640,44 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .move-list a:hover { background: var(--row-hover); text-decoration: none; }
 .move-none { padding: 0.75rem; }
 .move-card .breadcrumbs { margin-top: 0.75rem; }
+
+/* ---------- Sharing ---------- */
+
+.back-link { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
+.button-count {
+  min-width: 1.25rem; padding: 0 0.375rem; border-radius: 999px; font-size: 0.75rem; line-height: 1.25rem; text-align: center;
+  background: var(--accent-soft); color: var(--accent-text);
+}
+.role-badge { height: var(--control-height); padding: 0 0.875rem; font-size: 0.8125rem; }
+.share-layout { display: grid; gap: 1rem; max-width: 52rem; }
+.share-card h2 { font-size: 1.0625rem; margin-bottom: 0.875rem; }
+.share-card + .share-card { margin-top: 0; }
+.add-people-row { display: grid; gap: 0.75rem; align-items: end; }
+@media (min-width: 40rem) { .add-people-row { grid-template-columns: minmax(0, 1fr) 10rem; } }
+.note-fold summary { list-style: none; font-size: 0.875rem; }
+.note-fold summary::-webkit-details-marker { display: none; }
+.note-fold[open] summary { margin-bottom: 0.5rem; }
+.role-help { font-size: 0.8125rem; color: var(--muted); padding: 0.625rem 0.75rem; background: var(--surface-2); border-radius: var(--radius); }
+.role-help strong { color: var(--text); }
+
+.people-list { display: grid; }
+.person-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.625rem 0; }
+.person-row + .person-row { border-top: 1px solid var(--border); }
+.person-name { flex: 1; min-width: 11rem; font-weight: 600; overflow-wrap: anywhere; }
+.person-name small { display: block; color: var(--muted); font-weight: 400; font-size: 0.8125rem; }
+.person-name small.waiting { color: var(--warning); }
+.person-role { color: var(--muted); font-size: 0.875rem; font-weight: 600; padding-right: 0.5rem; }
+.person-tools { display: flex; gap: 0.375rem; align-items: center; margin: 0; }
+.person-tools select { width: auto; min-height: 2.25rem; height: 2.25rem; padding: 0 2rem 0 0.75rem; font-size: 0.875rem; }
+.transfer-form { flex-basis: 100%; margin: -0.25rem 0 0 2.5rem; }
+.person-row.is-inherited { opacity: 0.85; }
+.people-empty { margin-top: 0.5rem; }
+.person-inline { display: inline-flex; align-items: center; gap: 0.5rem; }
+.file-table .col-role { width: 8rem; color: var(--muted); }
+@media (max-width: 40rem) { .file-table .col-role { display: none; } }
+
+.link-state { display: flex; gap: 0.625rem; align-items: flex-start; margin-bottom: 0.75rem; }
+.link-state svg { flex: none; margin-top: 0.125rem; color: var(--accent-text); }
+.copy-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.copy-row input { font-family: var(--font-code); font-size: 0.8125rem; }
+.link-card .form-actions { margin-top: 0.75rem; justify-content: flex-start; }

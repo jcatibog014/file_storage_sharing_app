@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf, avatar %}
+{% from "_items.html" import type_icon with context %}
+{% block title %}Share {{ item.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ item_url(item) }}">{{ icon('back', 16) }} Back to {{ item.name }}</a>
+  <div class="page-head">
+    <div>
+      <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">Share {{ item.name }}</span></h1>
+      <p class="lead">{% if item.is_folder %}Everyone you add can open everything inside this folder too.{% else %}Add people, or turn on a link anyone can use.{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="share-layout">
+    <section class="card share-card">
+      <h2>Add People</h2>
+      <form method="post" class="stack" novalidate>
+        {{ csrf() }}
+        <input type="hidden" name="action" value="add">
+        <div class="add-people-row{% if errors.emails %} has-error{% endif %}">
+          <label class="field add-people-emails">
+            <span class="field-label">Emails <span class="hint">Separate several with commas</span></span>
+            <input type="text" name="emails" value="{{ form.emails }}" placeholder="name@example.com" autocomplete="off" required
+                   {% if errors.emails %}aria-invalid="true" aria-describedby="emails-error"{% endif %}>
+          </label>
+          <label class="field add-people-role">
+            <span class="field-label">Role</span>
+            <select name="role">
+              {% for value, label in ROLE_CHOICES %}<option value="{{ value }}"{% if form.role == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+        {% if errors.emails %}<p class="field-error" id="emails-error">{{ errors.emails }}</p>{% endif %}
+        <details class="note-fold"{% if form.note %} open{% endif %}>
+          <summary class="link-button">Add a message</summary>
+          <label class="field"><span class="visually-hidden">Message</span>
+            <textarea name="note" rows="2" maxlength="500" placeholder="Here are the photos from Saturday!">{{ form.note }}</textarea></label>
+        </details>
+        <div class="role-help">
+          <p><strong>Viewer</strong> can open and download. <strong>Editor</strong> can also upload, rename, move and remove things.
+             <strong>Co-owner</strong> can also share it and manage who has access.</p>
+        </div>
+        <div class="form-actions"><button class="button" type="submit">{{ icon('mail', 16) }} Share and email</button></div>
+      </form>
+    </section>
+
+    <section class="card share-card">
+      <h2>People With Access</h2>
+      <ul class="people-list">
+        <li class="person-row">
+          {{ avatar(item.owner) }}
+          <span class="person-name">{{ item.owner.name }}{% if item.owner_id == g.user.id %} (you){% endif %}<small>{{ item.owner.email if not item.owner.is_demo else 'Demo account' }}</small></span>
+          <span class="person-role">Owner</span>
+        </li>
+        {% for share in shares %}
+          <li class="person-row">
+            {{ avatar(share.user) }}
+            <span class="person-name">
+              {% if share.user %}{{ share.user.name }}{% if share.user_id == g.user.id %} (you){% endif %}<small>{{ share.email }}</small>
+              {% else %}{{ share.email }}<small class="waiting">Invited, hasn't signed up yet</small>{% endif %}
+            </span>
+            <form method="post" class="person-tools">
+              {{ csrf() }}
+              <input type="hidden" name="share_id" value="{{ share.id }}">
+              <input type="hidden" name="action" value="role">
+              <label class="visually-hidden" for="role-{{ share.id }}">Role for {{ share.email }}</label>
+              <select id="role-{{ share.id }}" name="role" data-auto-submit>
+                {% for value, label in ROLE_CHOICES %}<option value="{{ value }}"{% if share.role == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+              <button class="button button-quiet button-small" type="submit" data-auto-submit-button>Save</button>
+              <button class="icon-button" type="submit" name="action" value="remove" title="Remove {{ share.email }}"
+                      data-confirm-button="Remove {{ share.user.name if share.user else share.email }}? They won't be able to open it any more.">
+                <span class="visually-hidden">Remove {{ share.email }}</span>{{ icon('x', 16) }}</button>
+            </form>
+            {% if access.can('transfer') and share.user and item.parent_id is none and not g.user.is_demo %}
+              <form method="post" class="transfer-form">
+                {{ csrf() }}
+                <input type="hidden" name="share_id" value="{{ share.id }}">
+                <button class="link-button small" type="submit" name="action" value="transfer"
+                        data-confirm-button="Make {{ share.user.name }} the owner of {{ item.name }}? It moves to their drive and counts towards their space. You stay on as Co-owner.">Make owner</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+        {% for share, source in inherited %}
+          <li class="person-row is-inherited">
+            {{ avatar(share.user) }}
+            <span class="person-name">{{ share.user.name if share.user else share.email }}<small>From the folder <a href="{{ url_for('share.page', item_id=source.id) }}">{{ source.name }}</a></small></span>
+            <span class="person-role">{{ ROLE_NAMES[share.role] }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if not shares and not inherited %}<p class="muted small people-empty">Only you so far.</p>{% endif %}
+    </section>
+
+    <section class="card share-card link-card">
+      <h2>Link</h2>
+      {% if link and not link.disabled_at %}
+        <p class="link-state">{{ icon('link', 18) }} <span><strong>Anyone with the link</strong> can open {{ 'this folder and everything in it' if item.is_folder else 'this file' }}. No account needed.</span></p>
+        <div class="copy-row">
+          <label class="visually-hidden" for="share-link">Link</label>
+          <input id="share-link" type="text" value="{{ link_address }}" readonly>
+          <button class="button button-quiet" type="button" data-copy="share-link" hidden>Copy</button>
+        </div>
+        <p class="muted small">Opened {{ plural(link.open_count, 'time') }}.</p>
+        <form method="post" class="form-actions">
+          {{ csrf() }}
+          <button class="button button-quiet" type="submit" name="action" value="link_new"
+                  data-confirm-button="Make a new link? The old one stops working for everyone.">Make a new link</button>
+          <button class="button button-danger" type="submit" name="action" value="link_off">Turn off</button>
+        </form>
+      {% else %}
+        <p class="link-state">{{ icon('lock', 18) }} <span><strong>Only the people above</strong> can open it.</span></p>
+        <form method="post" class="form-actions">
+          {{ csrf() }}
+          <button class="button" type="submit" name="action" value="link_on">{{ icon('link', 16) }} Turn on the link</button>
+        </form>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

@@ -92,7 +92,7 @@ A plain form upload through Flask is the fallback when JavaScript is off. Pendin
 
 - [x] Stage 1: setup, accounts, look
 - [x] Stage 2: folders, files and object storage
-- [ ] Stage 3: sharing and permissions
+- [x] Stage 3: sharing and permissions
 - [ ] Stage 4: safety net
 - [ ] Stage 5: link controls
 - [ ] Stage 6: find & preview

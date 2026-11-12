@@ -4,14 +4,17 @@
 {% from "_items.html" import breadcrumbs, item_menu, type_icon with context %}
 {% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
-  {{ breadcrumbs(crumbs if crumbs is defined else path) }}
+  {{ breadcrumbs(crumbs, top_label=crumb_top[0], top_url=crumb_top[1]) }}
   <div class="page-head">
     <div>
       <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span></h1>
-      <p class="lead">{{ KIND_NAMES[kind_of(item)] }} &middot; {{ item.size|filesize }} &middot; you are {{ access.role_name }}</p>
+      <p class="lead">{{ KIND_NAMES[kind_of(item)] }} &middot; {{ item.size|filesize }} &middot; {{ 'yours' if access.role == 'owner' else 'you are ' ~ a_role(access.role) }}</p>
     </div>
     <div class="head-actions">
       {% block file_actions %}{% endblock %}
+      {% if access.can('share') %}
+        <a class="button button-quiet" href="{{ url_for('share.page', item_id=item.id) }}">{{ icon('share', 16) }} Share{% if people %} <span class="button-count">{{ people }}</span>{% endif %}</a>
+      {% endif %}
       {{ item_menu(item, access.role, show_download=False) }}
       <a class="button" href="{{ url_for('drive.download', item_id=item.id) }}">{{ icon('download', 16) }} Download</a>
     </div>

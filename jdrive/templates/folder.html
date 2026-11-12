@@ -6,7 +6,7 @@
 {% set role = access.role if access else 'owner' %}
 {% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
-  {% if folder %}{{ breadcrumbs(crumbs if crumbs is defined else path) }}{% endif %}
+  {% if folder %}{{ breadcrumbs(crumbs, top_label=crumb_top[0], top_url=crumb_top[1]) }}{% endif %}
   <div class="page-head">
     <div>
       <h1 class="folder-title">{% if folder %}{{ type_icon(folder, 26) }}{% endif %}{{ title }}</h1>
@@ -14,6 +14,11 @@
     </div>
     <div class="head-actions">
       {% block folder_actions %}{% endblock %}
+      {% if access and access.can('share') %}
+        <a class="button button-quiet" href="{{ url_for('share.page', item_id=folder.id) }}">{{ icon('share', 16) }} Share{% if people %} <span class="button-count">{{ people }}</span>{% endif %}</a>
+      {% elif access %}
+        <span class="badge badge-accent role-badge">{{ access.role_name }}</span>
+      {% endif %}
       {% if can_add %}
         <details class="new-panel" data-popover>
           <summary class="button button-quiet">{{ icon('folder-plus', 16) }} New folder</summary>

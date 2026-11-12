@@ -10,7 +10,7 @@
     <summary class="icon-button" title="More for {{ item.name }}"><span class="visually-hidden">More for {{ item.name }}</span>{{ icon('more') }}</summary>
     <div class="menu-items">
       {% if show_download and not item.is_folder %}<a href="{{ url_for('drive.download', item_id=item.id) }}">{{ icon('download', 16) }} Download</a>{% endif %}
-      {% if caller is defined %}{{ caller() }}{% endif %}
+      {% if role_allows(role, 'share') %}<a href="{{ url_for('share.page', item_id=item.id) }}">{{ icon('share', 16) }} Share</a>{% endif %}
       {% if role_allows(role, 'rename') %}<a href="{{ url_for('drive.rename', item_id=item.id) }}">{{ icon('pencil', 16) }} Rename</a>{% endif %}
       {% if role_allows(role, 'move') %}<a href="{{ url_for('drive.move', item_id=item.id) }}">{{ icon('move', 16) }} Move</a>{% endif %}
       {% if role_allows(role, 'delete_forever') %}

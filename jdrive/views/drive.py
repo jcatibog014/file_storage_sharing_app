@@ -42,6 +42,16 @@ def place(s, parent_id, action):
     return access.item.owner_id, access.item
 
 
+def crumbs_for(s, access):
+    """(path to show, top label, top address). People an item was shared with
+    see the path from the highest item they were given, under Shared With Me."""
+    from .. import sharing
+    if access.item.owner_id == g.user.id:
+        return access.path, ("My Drive", url_for("drive.home"))
+    start = sharing.first_shared_index(s, g.user, access.path)
+    return access.path[start:], ("Shared With Me", url_for("share.shared_with_me"))
+
+
 def view_mode():
     """List or grid, remembered for this login."""
     wanted = request.args.get("view")
@@ -79,7 +89,9 @@ def folder(item_id):
     access = permissions.require(s, g.user, item_id, "view", kind=FOLDER)
     sort, descending = sort_choice()
     items = files.children(s, access.item.owner_id, access.item.id, sort, descending)
+    crumbs, crumb_top = crumbs_for(s, access)
     return render_template("folder.html", access=access, folder=access.item, path=access.path, items=items,
+                           crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
                            sort=sort, descending=descending, view=view_mode(), can_add=access.can("upload"),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
 
@@ -90,8 +102,16 @@ def file(item_id):
     s = db.session()
     access = permissions.require(s, g.user, item_id, "view", kind=FILE)
     version = files.current_version(s, access.item)
+    crumbs, crumb_top = crumbs_for(s, access)
     return render_template("file.html", access=access, item=access.item, path=access.path, version=version,
+                           crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
+
+
+def _people(s, access):
+    """How many people this item is shared with (shown on the Share button)."""
+    from .. import sharing
+    return sharing.people_count(s, access.item) if access.can("share") else 0
 
 
 @bp.get("/files/<int:item_id>/download")

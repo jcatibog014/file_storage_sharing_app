@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf, avatar %}
+{% from "_items.html" import type_icon with context %}
+{% block title %}Shared With Me - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Shared With Me</h1>
+    <p class="lead">Files and folders other people added you to.</p></div></div>
+  {% if rows %}
+    <div class="file-table-wrap">
+      <table class="file-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col" class="col-owner">Shared By</th>
+            <th scope="col" class="col-role">Your Role</th>
+            <th scope="col" class="col-date">Shared</th>
+            <th scope="col" class="col-menu"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for share, item in rows %}
+            <tr>
+              <td class="col-name"><a class="item-link" href="{{ item_url(item) }}">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span></a></td>
+              <td class="col-owner"><span class="person-inline">{{ avatar(share.invited_by or item.owner, 'small') }} {{ (share.invited_by or item.owner).name }}</span></td>
+              <td class="col-role">{{ ROLE_NAMES[share.role] }}</td>
+              <td class="col-date" title="{{ share.created_at|nice_datetime }}">{{ share.created_at|ago }}</td>
+              <td class="col-menu">
+                <details class="item-menu" data-popover>
+                  <summary class="icon-button" title="More for {{ item.name }}"><span class="visually-hidden">More for {{ item.name }}</span>{{ icon('more') }}</summary>
+                  <div class="menu-items">
+                    {% if not item.is_folder %}<a href="{{ url_for('drive.download', item_id=item.id) }}">{{ icon('download', 16) }} Download</a>{% endif %}
+                    <form method="post" action="{{ url_for('share.leave', item_id=item.id) }}" data-confirm="Leave {{ item.name }}? You won't be able to open it unless they add you again.">
+                      {{ csrf() }}
+                      <button type="submit" class="danger">{{ icon('x', 16) }} Leave</button>
+                    </form>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      {{ icon('people', 56) }}
+      <h2>Nothing Shared Yet</h2>
+      <p>When someone shares a file or folder with {{ g.user.email if not g.user.is_demo else 'you' }}, it shows here.</p>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -18,6 +18,7 @@
     <nav aria-label="Main">
       <ul class="side-links">
         {{ link('drive.home', 'My Drive', 'drive', active=(menu_here or page) in ('drive.home', 'my-drive')) }}
+        {{ link('share.shared_with_me', 'Shared With Me', 'people', active=menu_here == 'shared') }}
       </ul>
     </nav>
     <div class="sidebar-foot">

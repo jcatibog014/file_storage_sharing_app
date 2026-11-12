@@ -5,7 +5,7 @@ Times are naive UTC (dates.utcnow()).
 """
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, false, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -173,3 +173,49 @@ class Upload(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
 
     blob: Mapped[Blob] = relationship()
+
+
+# ---------- Sharing ----------
+
+class Share(Base):
+    """Someone added by email to a file or folder, with a role. A share on a
+    folder covers everything inside it (permissions.py).
+
+    An email with no confirmed account yet is a waiting share (user_id None).
+    It is handed over only when that address is PROVEN, by the emailed code
+    (sharing.claim_waiting), so typing someone else's email at sign-up gets you nothing."""
+    __tablename__ = "shares"
+    __table_args__ = (UniqueConstraint("item_id", "email"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(254), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(10))
+    invited_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+    item: Mapped[Item] = relationship()
+    user: Mapped[User | None] = relationship(foreign_keys=[user_id])
+    invited_by: Mapped[User | None] = relationship(foreign_keys=[invited_by_id])
+
+
+class ShareLink(Base):
+    """"Anyone with the link": one per item. The link's secret (its token) is
+    never stored. It is an HMAC of the link's id and a random nonce, made with
+    SECRET_KEY, so the owner can see it again, but a copy of the database alone
+    opens nothing. We find a link by the sha256 of its token. A new nonce
+    ("Make a new link") makes the old address stop working."""
+    __tablename__ = "share_links"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), unique=True)
+    nonce: Mapped[str] = mapped_column(String(64))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    role: Mapped[str] = mapped_column(String(10), default="viewer")
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime)
+    open_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+    item: Mapped[Item] = relationship()
