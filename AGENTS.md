@@ -1,0 +1,42 @@
+# AGENTS.md
+
+This file guides AI coding agents (Claude Code, Codex, Cursor, Copilot and others) working in this repository.
+
+## Overview
+
+**J: Drive** ("Your files, on the J side."), a file storage and sharing app in Python (Flask). The name is the J from the owner's name, Janelle, plus a drive letter (like C: or D:). The repo is `file_storage_sharing_app` and the Python package is `jdrive`. People sign up, upload files into folders, download them, and share them with a link or by email as Viewer, Editor or Co-owner. The plan is `docs/PLAN.md`.
+
+It is a learning project for **object storage, signed URLs and access security**, so those parts stay easy to read: short comments that explain *why*, login written by hand (no Flask-Login), and no extra libraries unless the owner asks for them. Write the README in simple (A1-level) English.
+
+Python 3.13 is at `%LOCALAPPDATA%\Programs\Python\Python313\python.exe`. Use the virtual environment:
+
+- Install: `.venv\Scripts\python -m pip install -r requirements.txt` (create `.venv` with `python -m venv .venv` first if it's missing).
+- First time: `.venv\Scripts\flask --app jdrive upgrade-db` (makes the tables).
+- Run: `.venv\Scripts\flask --app jdrive run --debug --port 5012`, then open http://127.0.0.1:5012. Without a mail service, sign-up codes are at http://127.0.0.1:5012/dev/outbox (only with `--debug`). (Ports: Swap Meter 5000, Ambon Alert 5001, Ang Gastos! 5002, Sangkap 5003, Gawi 5004, Akda 5005, Hire Wire 5006, Plan-It 5007, ShiroMoto 5008, DFJC 5009, Ticket Tock 5010, Tally Ho! 5011.)
+- Test: `.venv\Scripts\python -m pytest`. Every test gets a fresh SQLite file and bucket folder and never uses the internet. Set `TEST_DATABASE_URL` to an **empty** Neon branch to run the same tests on PostgreSQL (each test drops and remakes the tables). SQLAlchemy warnings fail the tests (`pytest.ini`).
+- Other commands: `set-password <email>`.
+- Logo and app icon: `jdrive/static/icons/logo.svg` (a white folder with "J:" on a violet tile). `docs/make_icons.py` makes every PNG and `favicon.ico` from it; run it after changing the SVG.
+
+## Architecture
+
+- **Accounts (`auth.py`, `codes.py`):** open sign-up, and the email must be real. Sign-up emails a 6-digit code; the account works only after it is typed in (`email_verified_at`). Codes are stored as an HMAC with SECRET_KEY, run out after 15 minutes, and 5 wrong tries use one up; a new code waits 60 s, at most 5 an hour. An unconfirmed sign-up can be replaced by a new sign-up with the same email (the person who can read the inbox wins). `auth.on_verified` hooks run when an email is proven. Forgot Password emails a "reset" code and always answers the same, so it never tells who has an account.
+- **Email (`mailer.py`):** Brevo's HTTP API (live: Render's free plan blocks SMTP), Gmail with an app password (on a PC), or the outbox (tests, and `/dev/outbox` with `--debug`). `send()` never raises; it returns False if the service said no. Addresses ending in `.invalid` (demo people) never get mail.
+- **Rate limits (`limits.py`):** counters in the database (`rate_limits`), so they hold across restarts and workers. Login: 5 wrong passwords lock the account for 15 minutes, and one address may try 30 logins per 15 minutes.
+- **Login:** Hashes from Werkzeug. `load_user()` checks `session_version` on every request (a password change logs out other devices). CSRF: every POST needs `csrf_token` (`{{ csrf() }}` from `_macros.html`; JS sends it as the `X-CSRF-Token` header; tests use `post()` from `conftest.py`). Pages for a logged-in person are `Cache-Control: no-store`.
+- **Database:** SQLAlchemy 2.0 ORM (typed `Mapped[...]`), plain (not Flask-SQLAlchemy). `jdrive/db.py` makes one engine per app and one session per request: `db.session()`. Nothing is saved without `.commit()`. `expire_on_commit=False`. SQLite locally (`instance/jdrive.sqlite`, git-ignored; foreign keys on per connection), PostgreSQL (Neon, psycopg 3) when `DATABASE_URL` is set. Keep code portable: no dialect-only SQL. Times are naive UTC (`dates.utcnow()`); people see Philippine time (the filters in `formatting.py`). `users` uses `sqlite_autoincrement`, so a deleted demo's id is never handed out again.
+- **Migrations: Alembic**, in `jdrive/migrations/`. `flask --app jdrive upgrade-db` runs them (with SQLite's foreign keys switched off during the run, so a table rebuild can't cascade-delete rows); Render runs it before gunicorn.
+  - **To change the schema:** edit `models.py`, then `.venv\Scripts\alembic revision --autogenerate -m "what changed" --rev-id 000N`, **read the new file and fix it** (booleans default to `sa.false()`, times to `sa.func.now()`, so PostgreSQL accepts them; a new NOT NULL column needs a `server_default`), and commit it. Never edit a migration that has run on the live site. `tests/test_migrations.py` fails if the models and the migrations disagree.
+  - Every foreign key to a parent that is deleted in bulk needs an index that STARTS with that column, or the cascade scans the whole table.
+- **Every page works without JavaScript.** `app.js` only adds extras. Use `.no-js-only` / `.js-only` for fallbacks. The CSP (`__init__.py`) has no inline scripts or styles, so **never use `style=""` or inline `<script>`**: sizes and colours are classes.
+
+## UI rules (the owner's priority is neatness)
+
+- **Look: Lavender studio.** A soft lilac page (`--bg` #f6f3fb), white cards, deep plum ink (`--text`) and sidebar (`--sidebar` #2e1a47), and one violet accent: `--accent` #6d28d9 for buttons and links (white text 7.1:1; #a78bfa with dark text in dark mode), `--accent-bright` (the logo violet) for decoration only. File types have their own icon colours (`--t-*`). Plus Jakarta Sans for headings, Inter for text, self-hosted in `static/fonts/`. Dark mode is defined twice in `style.css` (device setting + the choice in Settings); change both blocks together.
+- **Messages are toasts** (`_toasts.html`, bottom right): `flash(msg)` is good news and fades after 6 seconds; `flash(msg, "error")` stays until closed.
+- **Settings holds the controls, and the menus only navigate.** The theme (Device, Light or Dark, saved per device in `localStorage`; `theme.js` applies it before the page draws) is only on `/settings`. Log out is there too, and in the account menu at the bottom of the sidebar.
+- **No decorative emoji.** Icons are the line SVGs in `_icons.html`.
+- **Title Case** for the menu, page titles (`h1`), section headings, tabs, empty-state titles and anything that names a page ("My Drive", "Shared With Me"). Small words (a, an, the, and, or, of, in, on, to, for, with, as, at, by) stay lowercase unless first. **Sentence case** for everything else: action buttons ("New folder", "Send the code"), labels, hints, messages. The main button of a page is last on the right.
+- Controls are the same height (`--control-height`) with bottoms aligned. Sizes in `rem`; the root font steps up at 1600 / 1920 / 2300px.
+- The sidebar shows from 56rem up; below that a ☰ button opens it.
+- **Every PR must keep the README's pictures up to date (the owner's standing rule).** In a PR description, link pictures with a full `raw.githubusercontent.com` address.
+- Commit messages and PR bodies go through files (`git commit -F`, `gh pr create --body-file`): PowerShell 5.1 breaks quotes in arguments.

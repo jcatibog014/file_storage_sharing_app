@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <section class="card narrow stack">
+    <h1>{% if code == 404 %}Not Found{% elif code == 403 %}Not Allowed{% elif code == 429 %}Slow Down{% else %}Something Went Wrong{% endif %}</h1>
+    <p class="muted">{{ message }}</p>
+    <div class="form-actions"><a class="button" href="{{ url_for('drive.index') }}">{{ 'Go to My Drive' if g.user else 'Go to the start' }}</a></div>
+  </section>
+{% endblock %}

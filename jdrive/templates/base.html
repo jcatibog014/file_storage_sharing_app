@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+  <meta name="description" content="J: Drive: upload, organise, download and share your files, with access you control.">
+  {# Shared links hold a secret in their address: never pass it on to other sites. #}
+  <meta name="referrer" content="same-origin">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/plus-jakarta-sans-700.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/inter-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  {# The app icon (docs/make_icons.py): browser tabs, iPhone home screens, and Android through the manifest. #}
+  <link rel="icon" href="{{ url_for('static', filename='icons/favicon.ico') }}" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-32.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <meta name="theme-color" content="#2e1a47">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {# Before the page draws, so a saved dark theme never flashes white. #}
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="{% block layout_class %}app{% endblock %}">
+    {% block sidebar %}{% if g.user %}{% include "_sidebar.html" %}{% endif %}{% endblock %}
+    {# Pages for visitors (a shared link) put a full-width top bar here instead of the menu. #}
+    {% block public_top %}{% endblock %}
+    <main id="main" class="page {% block page_class %}{% endblock %}">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% include "_toasts.html" %}
+</body>
+</html>

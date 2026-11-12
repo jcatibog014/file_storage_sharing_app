@@ -1,0 +1,7 @@
+{% from "_icons.html" import logo %}
+{# The panel beside the login and sign-up cards: a third of the screen on a computer. #}
+<section class="welcome-panel">
+  <a class="logo" href="{{ url_for('auth.login') }}">{{ logo(64) }} {{ APP_NAME }}</a>
+  <p class="welcome-line">{{ TAGLINE }}</p>
+  <p class="welcome-note">Keep your files in one safe place. Share a folder with a link, or invite people by email to view, edit or own it with you.</p>
+</section>

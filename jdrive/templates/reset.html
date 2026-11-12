@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}New Password - {{ APP_NAME }}{% endblock %}
+{% block body_class %}welcome-layout{% endblock %}
+{% block layout_class %}{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block content %}
+  <div class="welcome">
+    {% include "_welcome.html" %}
+    <section class="welcome-cards">
+      <div class="card">
+        <h1>New Password</h1>
+        <p class="lead">Type the code we sent to <strong>{{ email }}</strong>.</p>
+        <form method="post" action="{{ url_for('auth.reset') }}" class="stack">
+          {{ csrf() }}
+          <label class="field{% if errors.code %} has-error{% endif %}">
+            <span class="field-label">Code</span>
+            <input type="text" name="code" class="code-input" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="7" required autofocus{% if errors.code %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
+            {% if errors.code %}<p class="field-error" id="code-error">{{ errors.code }}</p>{% endif %}
+          </label>
+          {{ field('new_password', 'New password', '', errors.new_password, type='password', hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+          {{ field('confirm_password', 'New password again', type='password', attrs='autocomplete="new-password" required') }}
+          <button class="button" type="submit">Save new password</button>
+        </form>
+        <p class="card-note"><a href="{{ url_for('auth.forgot') }}">Send a new code</a></p>
+      </div>
+    </section>
+  </div>
+{% endblock %}
