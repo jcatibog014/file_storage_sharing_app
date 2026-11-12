@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% from "_macros.html" import csrf %}
+{% from "_activity.html" import activity_lines with context %}
 {% from "_items.html" import item_list, item_grid, breadcrumbs, type_icon, star_button with context %}
 {% set title = folder.name if folder else 'My Drive' %}
 {% set role = access.role if access else 'owner' %}
@@ -81,4 +82,10 @@
     {% endif %}
     {% if can_add %}<div class="drop-hint" aria-hidden="true">{{ icon('upload', 40) }} Drop to upload</div>{% endif %}
   </div>
+  {% if folder and history %}
+    <details class="card folder-activity">
+      <summary><h2>{{ icon('activity', 16) }} Activity in This Folder</h2></summary>
+      {{ activity_lines(history) }}
+    </details>
+  {% endif %}
 {% endblock %}

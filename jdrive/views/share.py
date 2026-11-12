@@ -2,7 +2,7 @@
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 from sqlalchemy import select
 
-from .. import db, links, permissions, sharing
+from .. import activity, db, links, notify, permissions, sharing
 from ..auth import login_required, not_for_demo
 from ..dates import utcnow
 from ..models import Share
@@ -30,12 +30,19 @@ def page(item_id):
                 errors["emails"] = "The demo can't email real people. Sign up to share for real."
             else:
                 try:
-                    added, updated = sharing.add_people(s, g.user, item, sharing.split_emails(form["emails"]),
-                                                        form["role"], moment, form["note"])
+                    emails = sharing.split_emails(form["emails"])
+                    added, updated = sharing.add_people(s, g.user, item, emails, form["role"], moment, form["note"])
                 except sharing.Problem as problem:
                     s.rollback()
                     errors["emails"] = str(problem)
                 else:
+                    role_name = permissions.ROLE_NAMES[form["role"]]
+                    for email in emails:
+                        activity.log(s, g.user, item, "shared", moment, detail=f"with {email} as {role_name}")
+                    for share in sharing.shares_on(s, item):
+                        if share.email in emails and share.user_id and share.created_at == moment:
+                            notify.send(s, share.user_id, f"{g.user.name} shared {item.name} with you.",
+                                        url_for("drive.folder" if item.is_folder else "drive.file", item_id=item.id), moment)
                     s.commit()
                     parts = []
                     if added:
@@ -55,9 +62,12 @@ def page(item_id):
                 except sharing.Problem as problem:
                     flash(str(problem), "error")
                     return redirect(here)
+                activity.log(s, g.user, item, "role_changed", moment,
+                             detail=f"{share.email} is now {permissions.ROLE_NAMES[share.role]}")
                 s.commit()
                 flash(f"{name} is now {permissions.ROLE_NAMES[share.role]}.")
             elif action == "remove":
+                activity.log(s, g.user, item, "unshared", moment, detail=share.email)
                 s.delete(share)
                 s.commit()
                 flash(f"Removed {name}.")
@@ -70,12 +80,16 @@ def page(item_id):
                     s.rollback()
                     flash(str(problem), "error")
                     return redirect(here)
+                activity.log(s, g.user, item, "owner_changed", moment, detail=f"to {name}")
+                notify.send(s, item.owner_id, f"{g.user.name} made you the owner of {item.name}.",
+                            url_for("drive.folder" if item.is_folder else "drive.file", item_id=item.id), moment)
                 s.commit()
                 flash(f"{name} owns {item.name} now. You are a Co-owner.")
                 return redirect(url_for("share.shared_with_me"))
             return redirect(here)
         elif action == "link_on":
             links.turn_on(s, g.user, item, moment)
+            activity.log(s, g.user, item, "link_on", moment)
             s.commit()
             flash("Anyone with the link can open it now.")
             return redirect(here)
@@ -83,6 +97,7 @@ def page(item_id):
             link = links.for_item(s, item)
             if link is not None:
                 links.turn_off(link, moment)
+                activity.log(s, g.user, item, "link_off", moment)
                 s.commit()
             flash("The link is off. Only the people listed can open it.")
             return redirect(here)
@@ -99,6 +114,7 @@ def page(item_id):
                 s.rollback()
                 flash(str(problem), "error")
                 return redirect(here)
+            activity.log(s, g.user, item, "link_settings", moment)
             s.commit()
             flash("Saved the link settings.")
             return redirect(here)
@@ -106,6 +122,7 @@ def page(item_id):
             link = links.for_item(s, item)
             if link is not None:
                 links.renew(link)
+                activity.log(s, g.user, item, "link_new", moment)
                 s.commit()
             flash("Made a new link. The old one doesn't work any more.")
             return redirect(here)
@@ -129,6 +146,7 @@ def leave(item_id):
     if share is None:
         abort(404)
     name = share.item.name
+    activity.log(s, g.user, share.item, "left", utcnow())
     s.delete(share)
     s.commit()
     flash(f"You left {name}.")

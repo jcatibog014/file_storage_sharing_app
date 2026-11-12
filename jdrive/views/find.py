@@ -3,7 +3,7 @@ import re
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, stream_with_context, url_for
 
-from .. import db, files, find, links, permissions, previews, storage
+from .. import activity, db, files, find, links, permissions, previews, storage
 from ..auth import login_required, safe_next
 from ..dates import utcnow
 from ..models import FILE, FOLDER
@@ -106,6 +106,8 @@ def _zip_response(s, folder, plan_owner_note=""):
 def folder_zip(item_id):
     s = db.session()
     access = permissions.require(s, g.user, item_id, "download", kind=FOLDER)
+    activity.log(s, g.user, access.item, "zipped", utcnow())
+    s.commit()
     return _zip_response(s, access.item)
 
 

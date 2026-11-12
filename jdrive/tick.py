@@ -19,7 +19,7 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from flask.cli import with_appcontext
 from sqlalchemy import delete
 
-from . import db, files, limits
+from . import db, devices, files, limits
 from .dates import utcnow
 from .models import User
 
@@ -43,6 +43,7 @@ def run(s, moment):
         User.email_verified_at.is_(None), User.is_demo.is_(False),
         User.created_at < moment - UNVERIFIED_LIFETIME)).rowcount
     done["limits_cleared"] = limits.purge(s, moment)
+    done["old_logins_forgotten"] = devices.purge(s, moment)
     s.commit()
     done["objects_swept"] = files.sweep_blobs(s)  # anything left over (old versions, gone demos)
     return done

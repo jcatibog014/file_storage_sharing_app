@@ -11,7 +11,7 @@ Anything else is a 404.
 from flask import (Blueprint, abort, flash, g, jsonify, make_response, redirect, render_template, request, session,
                    url_for)
 
-from .. import db, files, limits, links, permissions, previews, storage
+from .. import activity, db, files, limits, links, notify, permissions, previews, storage
 from ..dates import utcnow
 from ..models import FILE, Upload
 
@@ -75,6 +75,8 @@ def link(token):
     if path is None:
         abort(404)  # in the Trash
     link.open_count += 1
+    if g.user is None or g.user.id != link.item.owner_id:
+        activity.log(s, g.user, link.item, "link_opened", utcnow())
     s.commit()
     locked = _locked(link, token)
     if locked:
@@ -125,6 +127,8 @@ def download(token, item_id):
     version = files.current_version(s, item)
     if version is None:
         abort(404)
+    activity.log(s, g.user, item, "downloaded", utcnow(), detail="through the link")
+    s.commit()
     return _private(redirect(storage.get().presign_get(version.blob.key, item.name, version.blob.content_type)))
 
 
@@ -182,12 +186,21 @@ def api_finish_upload(token, upload_id):
         s.commit()
         files.sweep_blobs(s, [blob_id])
         return _json_problem(str(problem))
+    _arrived(s, link, item)
     s.commit()
     sent = dict(session.get("link_sent", {}))
     sent[str(link.id)] = (sent.get(str(link.id), []) + [item.name])[-SENT_LIST_LENGTH:]
     session["link_sent"] = sent
     session["link_uploads"] = [number for number in session.get("link_uploads", []) if number != upload_id]
     return jsonify({"ok": True})
+
+
+def _arrived(s, link, item):
+    """A file came in through an upload link: note it, and tell the owner."""
+    moment = utcnow()
+    activity.log(s, g.user, item, "link_upload", moment, detail=f"into {link.item.name}")
+    notify.send(s, link.item.owner_id, f"Someone sent {item.name} into {link.item.name}.",
+                url_for("drive.folder", item_id=link.item.id), moment)
 
 
 @bp.post("/s/<token>/upload")
@@ -206,7 +219,9 @@ def upload_form(token):
             flash("That's a lot of uploads for one hour. Please wait a while.", "error")
             break
         try:
-            names.append(files.upload_through_server(s, None, link.item.owner_id, link.item, file_storage, moment).name)
+            item = files.upload_through_server(s, None, link.item.owner_id, link.item, file_storage, moment)
+            _arrived(s, link, item)
+            names.append(item.name)
             s.commit()
         except files.Problem as problem:
             s.rollback()

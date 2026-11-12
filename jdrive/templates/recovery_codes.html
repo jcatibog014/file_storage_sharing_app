@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Recovery Codes - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <section class="card narrow">
+    <h1 class="card-heading">Your Recovery Codes</h1>
+    <p class="muted">If you lose your phone, each of these logs you in once. Save them somewhere safe, like a password manager.
+      <strong>They are shown only now.</strong></p>
+    <ul class="recovery-list">
+      {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+    </ul>
+    <div class="form-actions">
+      <input type="hidden" id="all-codes" value="{{ codes|join(' ') }}">
+      <button class="button button-quiet" type="button" data-copy="all-codes" hidden>Copy</button>
+      <a class="button" href="{{ url_for('auth.settings') }}">I saved them</a>
+    </div>
+  </section>
+{% endblock %}

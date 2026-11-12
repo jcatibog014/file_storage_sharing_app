@@ -34,6 +34,10 @@ class User(Base):
     # Try Demo: each visitor gets their own sample people, deleted at demo_expires_at.
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     demo_expires_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    # Two-step sign-in: the authenticator app's shared secret (base32), and since when it is on.
+    totp_secret: Mapped[str | None] = mapped_column(String(64))
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime)
+    totp_last_step: Mapped[int | None] = mapped_column(BigInteger)  # a code works only once
     # How much the files they own may take (every version and the trash count too).
     quota_bytes: Mapped[int] = mapped_column(BigInteger, default=1_000_000_000, server_default="1000000000")
 
@@ -265,3 +269,63 @@ class Thumbnail(Base):
     version_id: Mapped[int] = mapped_column(ForeignKey("file_versions.id", ondelete="CASCADE"), primary_key=True)
     blob_id: Mapped[int | None] = mapped_column(ForeignKey("blobs.id", ondelete="RESTRICT"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+# ---------- Activity and security ----------
+
+class Activity(Base):
+    """One line of history: who did what to which file or folder. Only ever
+    added (activity.log), never changed. It keeps the item's name and owner, so
+    the owner still sees "deleted Report.pdf" after the file is gone."""
+    __tablename__ = "activity"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    actor_label: Mapped[str | None] = mapped_column(String(80))  # "Someone with the link"
+    item_id: Mapped[int | None] = mapped_column(ForeignKey("items.id", ondelete="SET NULL"), index=True)
+    item_name: Mapped[str] = mapped_column(String(255))
+    item_kind: Mapped[str] = mapped_column(String(10))
+    verb: Mapped[str] = mapped_column(String(30))
+    detail: Mapped[str | None] = mapped_column(String(300))
+
+    actor: Mapped[User | None] = relationship(foreign_keys=[actor_id])
+
+
+class Notification(Base):
+    """A note for one person (the bell in the menu): shared with you, files arrived..."""
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime)
+    text: Mapped[str] = mapped_column(String(300))
+    url: Mapped[str | None] = mapped_column(String(300))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class LoginSession(Base):
+    """One logged-in device. The cookie holds this row's id and a secret (only its
+    hash is here); ending the row (Log out, Log out other devices) ends that login
+    at once. Ended rows are kept for a while to recognise devices seen before."""
+    __tablename__ = "login_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    secret_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime)
+    device: Mapped[str] = mapped_column(String(120))
+    ip: Mapped[str] = mapped_column(String(64))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class RecoveryCode(Base):
+    """One-time codes for two-step sign-in, for when the phone is lost. Only hashes are kept."""
+    __tablename__ = "recovery_codes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    code_hash: Mapped[str] = mapped_column(String(64))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime)

@@ -3,6 +3,7 @@
 {% from "_macros.html" import csrf, avatar %}
 {% from "_items.html" import breadcrumbs, item_menu, type_icon, star_button with context %}
 {% from "_preview.html" import preview_box with context %}
+{% from "_activity.html" import activity_lines with context %}
 {% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
   {{ breadcrumbs(crumbs, top_label=crumb_top[0], top_url=crumb_top[1]) }}
@@ -84,7 +85,12 @@
         </ol>
         <p class="muted small">The newest {{ MAX_VERSIONS }} are kept.</p>
       </section>
-      {% block side_more %}{% endblock %}
+      {% if history %}
+        <section class="card">
+          <h2>Activity</h2>
+          {{ activity_lines(history, show_item=False) }}
+        </section>
+      {% endif %}
     </aside>
   </div>
 {% endblock %}

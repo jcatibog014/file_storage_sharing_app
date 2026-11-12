@@ -79,12 +79,18 @@ def make_user(app, name="Maria Santos", email=None, verified=True, **fields):
 
 
 def log_in_as(client, user_id):
-    """Skip the login form: put the user straight into the session."""
+    """Skip the login form: put the user straight into the session (with a device row, like a real login)."""
+    from jdrive import devices
     with client.application.app_context():
-        version = db.session().get(User, user_id).session_version
+        s = db.session()
+        user = s.get(User, user_id)
+        version = user.session_version
+        session_id, secret = devices.start(s, user, "Test browser", "127.0.0.1", utcnow())
+        s.commit()
     with client.session_transaction() as session:
         session["user_id"] = user_id
         session["session_version"] = version
+        session["sid"], session["ss"] = session_id, secret
         session["csrf"] = CSRF
     return client
 
@@ -159,3 +165,8 @@ def get_item(app, item_id):
     from jdrive.models import Item
     with app.app_context():
         return db.session().get(Item, item_id)
+
+
+def words(response):
+    """A page as plain words: no tags, single spaces (for sentences split by <strong> and such)."""
+    return " ".join(re.sub(r"<[^>]+>", " ", text(response)).split())

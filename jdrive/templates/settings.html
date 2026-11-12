@@ -21,8 +21,6 @@
       </fieldset>
     </section>
 
-    {% block more_settings %}{% endblock %}
-
     <section class="setting">
       <div class="setting-text">
         <h2>Your Name</h2>
@@ -61,6 +59,79 @@
           </fieldset>
         </form>
       </details>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Two-Step Sign-In</h2>
+        <p>{% if twostep_on %}On. Logging in also needs a code from your phone. {{ plural(codes_left, 'recovery code') }} left.
+           {% else %}Off. Turn it on so a stolen password isn't enough to get in.{% endif %}</p>
+      </div>
+      {% if twostep_on %}
+        <div class="setting-links">
+          <details class="setting-fold"{% if errors.recovery_password %} open{% endif %}>
+            <summary class="button button-quiet">{{ icon('key', 16) }} New recovery codes</summary>
+            <form method="post" class="stack">
+              {{ csrf() }}
+              <input type="hidden" name="action" value="recovery_codes">
+              {{ field('current_password', 'Current password', '', errors.recovery_password, type='password', attrs='autocomplete="current-password" required') }}
+              <div class="form-actions"><button class="button" type="submit">Make new codes</button></div>
+            </form>
+          </details>
+          <details class="setting-fold"{% if errors.twostep_password %} open{% endif %}>
+            <summary class="button button-danger">Turn off</summary>
+            <form method="post" class="stack">
+              {{ csrf() }}
+              <input type="hidden" name="action" value="twostep_off">
+              {{ field('current_password', 'Current password', '', errors.twostep_password, type='password', attrs='autocomplete="current-password" required') }}
+              <div class="form-actions"><button class="button button-danger" type="submit">Turn off two-step sign-in</button></div>
+            </form>
+          </details>
+        </div>
+      {% else %}
+        <div class="form-actions">
+          {% if g.user.is_demo %}<button class="button" type="button" disabled>{{ icon('shield', 16) }} Turn on</button>
+          {% else %}<a class="button" href="{{ url_for('auth.twostep_setup') }}">{{ icon('shield', 16) }} Turn on</a>{% endif %}
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Where You're Logged In</h2>
+        <p>Don't know one? Log it out, then change your password.</p>
+      </div>
+      <div class="device-list">
+        <ul>
+          {% for row in sessions %}
+            <li class="device">
+              {{ icon('device', 20) }}
+              <span class="device-text"><strong>{{ row.device }}</strong>{% if row.id == this_session %} <span class="badge badge-accent">This device</span>{% endif %}
+                <small>{{ row.ip }} &middot; last seen {{ row.last_seen_at|ago }}</small></span>
+              {% if row.id != this_session %}
+                <form method="post">
+                  {{ csrf() }}<input type="hidden" name="action" value="end_session"><input type="hidden" name="session_id" value="{{ row.id }}">
+                  <button class="button button-quiet button-small" type="submit"{% if g.user.is_demo %} disabled{% endif %}>Log out</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        {% if sessions|length > 1 %}
+          <form method="post" class="form-actions">
+            {{ csrf() }}<input type="hidden" name="action" value="logout_others">
+            <button class="button button-quiet" type="submit"{% if g.user.is_demo %} disabled{% endif %}>Log out other devices</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Activity</h2>
+        <p>Everything that happened to your files, and everything you did.</p>
+      </div>
+      <div class="form-actions"><a class="button button-quiet" href="{{ url_for('activity_views.page') }}">{{ icon('activity', 16) }} Open activity</a></div>
     </section>
 
     <section class="setting">

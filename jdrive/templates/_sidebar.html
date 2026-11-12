@@ -27,6 +27,7 @@
         {{ link('find.recent', 'Recent', 'clock', active=menu_here == 'recent') }}
         {{ link('find.starred', 'Starred', 'star', active=menu_here == 'starred') }}
         {{ link('drive.trash_page', 'Trash', 'trash', active=menu_here == 'trash') }}
+        {{ link('activity_views.notifications', 'Notifications', 'bell', active=menu_here == 'notifications', count=unread_count(g.user)) }}
       </ul>
       {# How much space the files take: every version and the Trash count. #}
       {% set used, limit, percent = storage_usage(g.user) %}

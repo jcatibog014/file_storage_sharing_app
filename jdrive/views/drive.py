@@ -5,7 +5,7 @@ gives a 404 for anything the person can't see.
 """
 from flask import Blueprint, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 
-from .. import db, files, find, permissions, previews, storage
+from .. import activity, db, files, find, permissions, previews, storage
 from ..auth import login_required
 from ..dates import utcnow
 from ..models import FILE, FOLDER, Item, Upload
@@ -96,6 +96,7 @@ def folder(item_id):
     return render_template("folder.html", access=access, folder=access.item, path=access.path, items=items,
                            crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
                            starred=find.starred_ids(s, g.user, items + [access.item]),
+                           history=activity.for_item(s, access.item, limit=15),
                            sort=sort, descending=descending, view=view_mode(), can_add=access.can("upload"),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
 
@@ -114,6 +115,7 @@ def file(item_id):
     return render_template("file.html", access=access, item=access.item, path=access.path, version=version,
                            versions=files.versions(s, access.item), preview=kind, text=text, more_text=more,
                            is_starred=find.is_starred(s, g.user, access.item),
+                           history=activity.for_item(s, access.item, limit=15),
                            crumbs=crumbs, crumb_top=crumb_top, people=_people(s, access),
                            menu_here="my-drive" if access.item.owner_id == g.user.id else "shared")
 
@@ -134,6 +136,8 @@ def download(item_id):
     version = files.current_version(s, access.item)
     if version is None:
         abort(404)
+    activity.log(s, g.user, access.item, "downloaded", utcnow())
+    s.commit()
     url = storage.get().presign_get(version.blob.key, access.item.name, version.blob.content_type)
     return redirect(url)
 
@@ -148,6 +152,7 @@ def new_folder():
     except files.Problem as problem:
         flash(str(problem), "error")
         return redirect(item_url(parent))
+    activity.log(s, g.user, folder, "folder_made", utcnow())
     s.commit()
     flash(f"Made the folder {folder.name}.")
     return redirect(item_url(parent))
@@ -175,7 +180,10 @@ def upload_form():
     done = []
     for file_storage in chosen:
         try:
-            done.append(files.upload_through_server(s, g.user, owner_id, parent, file_storage, utcnow(), target=target))
+            item = files.upload_through_server(s, g.user, owner_id, parent, file_storage, utcnow(), target=target)
+            activity.log(s, g.user, item, "new_version" if target else "uploaded", utcnow())
+            find.touch(s, g.user, item, utcnow())
+            done.append(item)
             s.commit()
             files.sweep_after_commit(s)
         except files.Problem as problem:
@@ -195,11 +203,14 @@ def rename(item_id):
     access = permissions.require(s, g.user, item_id, "rename")
     error = None
     if request.method == "POST":
+        old_name = access.item.name
         try:
             files.rename(s, access.item, request.form.get("name", ""), utcnow())
         except files.Problem as problem:
             error = str(problem)
         else:
+            if access.item.name != old_name:
+                activity.log(s, g.user, access.item, "renamed", utcnow(), detail=f"from {old_name}")
             s.commit()
             flash(f"Renamed to {access.item.name}.")
             return redirect(parent_url(access.item))
@@ -224,6 +235,7 @@ def move(item_id):
         except files.Problem as problem:
             flash(str(problem), "error")
             return redirect(url_for("drive.move", item_id=item.id, at=target.id if target else None))
+        activity.log(s, g.user, item, "moved", utcnow(), detail=f"to {target.name if target else 'My Drive'}")
         s.commit()
         flash(f"Moved {item.name} to {target.name if target else 'My Drive'}.")
         return redirect(item_url(target))
@@ -254,6 +266,7 @@ def trash(item_id):
     item = access.item
     back = parent_url(item)
     files.trash(s, g.user, item, utcnow())
+    activity.log(s, g.user, item, "trashed", utcnow())
     s.commit()
     flash(f"Moved {item.name} to the Trash. It is deleted for good after {files.TRASH_DAYS} days.")
     return redirect(back)
@@ -277,6 +290,7 @@ def restore(item_id):
     s = db.session()
     item = _trashed_or_404(s, item_id, "restore")
     back_home = files.restore(s, item, utcnow())
+    activity.log(s, g.user, item, "restored", utcnow())
     s.commit()
     if back_home:
         flash(f"Restored {item.name}.")
@@ -293,6 +307,8 @@ def delete(item_id):
     s = db.session()
     item = _trashed_or_404(s, item_id, "delete_forever")
     name = item.name
+    activity.log(s, g.user, item, "deleted", utcnow())
+    s.flush()
     blob_ids = files.delete_forever(s, item)
     s.commit()
     files.sweep_blobs(s, blob_ids)
@@ -325,6 +341,8 @@ def empty_trash():
     count = 0
     for item in files.trashed_items(s, g.user):
         if item.owner_id == g.user.id and s.get(Item, item.id) is not None:
+            activity.log(s, g.user, item, "deleted", utcnow())
+            s.flush()
             blob_ids += files.delete_forever(s, item)
             count += 1
     s.commit()
@@ -371,6 +389,7 @@ def restore_version(item_id, version_id):
     except files.Problem as problem:
         flash(str(problem), "error")
         return redirect(url_for("drive.file", item_id=item_id))
+    activity.log(s, g.user, access.item, "version_restored", utcnow(), detail=f"version {version.number}")
     s.commit()
     files.sweep_after_commit(s)
     flash(f"Version {version.number} is the current one again.")
@@ -388,6 +407,7 @@ def delete_version(item_id, version_id):
     except files.Problem as problem:
         flash(str(problem), "error")
         return redirect(url_for("drive.file", item_id=item_id))
+    activity.log(s, g.user, access.item, "version_deleted", utcnow(), detail=f"version {version.number}")
     s.commit()
     files.sweep_blobs(s, [blob_id])
     flash(f"Deleted version {version.number}.")
@@ -453,6 +473,7 @@ def api_finish_upload(upload_id):
         files.sweep_blobs(s, [blob_id])
         return json_problem(str(problem))
     find.touch(s, g.user, item, utcnow())
+    activity.log(s, g.user, item, "new_version" if upload.target_item_id else "uploaded", utcnow())
     s.commit()
     files.sweep_after_commit(s)
     return jsonify({"ok": True, "item": {"id": item.id, "name": item.name, "url": item_url(item)}})

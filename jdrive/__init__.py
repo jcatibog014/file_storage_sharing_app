@@ -97,8 +97,9 @@ def create_app(test_config=None):
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
-    from . import auth, db, files, formatting, permissions, quota, sharing, storage, tick
+    from . import activity, auth, db, files, formatting, notify, permissions, quota, sharing, storage, tick
     from .views import drive, public, share
+    from .views import activity as activity_views
     from .views import find as find_views
 
     db.init_app(app)
@@ -112,8 +113,10 @@ def create_app(test_config=None):
     quota.init_app(app)
     tick.init_app(app)
     find_views.init_app(app)
+    activity.init_app(app)
+    notify.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
-    for blueprint in (auth.bp, drive.bp, share.bp, public.bp, tick.bp, find_views.bp):
+    for blueprint in (auth.bp, drive.bp, share.bp, public.bp, tick.bp, find_views.bp, activity_views.bp):
         app.register_blueprint(blueprint)
 
     app.jinja_env.globals.update(APP_NAME=APP_NAME, TAGLINE=TAGLINE, has_demo="auth.demo" in app.view_functions)

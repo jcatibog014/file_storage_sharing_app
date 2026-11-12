@@ -23,7 +23,7 @@ from flask.cli import with_appcontext
 from sqlalchemy import select
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import codes, db, limits, mailer
+from . import codes, db, devices, limits, mailer, twostep
 from .dates import utcnow
 from .models import User
 
@@ -149,7 +149,19 @@ def safe_next(target, default=None):
     return default or url_for("drive.home")
 
 
-def log_in(user):
+def log_in(user, moment=None):
+    """Start a login on this device (a LoginSession row, devices.py) and say so in the cookie."""
+    s = db.session()
+    moment = moment or utcnow()
+    device = devices.describe(request.headers.get("User-Agent", ""))
+    new_device = not user.is_demo and devices.has_any(s, user) and not devices.seen_before(s, user, device)
+    session_id, secret = devices.start(s, user, device, limits.client_ip(), moment)
+    s.commit()
+    if new_device:
+        mailer.send(user.email, "New login to your J: Drive",
+                    f"Hi {user.first_name},\n\nSomeone just logged in to your J: Drive from {device}. "
+                    f"If that was you, all is well.\n\nIf it wasn't, change your password now and choose "
+                    f"\"Log out other devices\" in Settings: {url_for('auth.settings', _external=True)}\n\nJ: Drive")
     csrf = session.get("csrf")
     session.clear()  # a new session for the new user (old cookies can't be reused)
     if csrf and user.is_demo:
@@ -157,6 +169,7 @@ def log_in(user):
     session.permanent = True  # stay logged in for PERMANENT_SESSION_LIFETIME
     session["user_id"] = user.id
     session["session_version"] = user.session_version
+    session["sid"], session["ss"] = session_id, secret
 
 
 def mark_verified(s, user, moment):
@@ -173,12 +186,14 @@ def load_user():
     g.user = None
     user_id = session.get("user_id")
     if user_id is not None:
-        user = db.session().get(User, user_id)
+        s = db.session()
+        user = s.get(User, user_id)
         if (user is None or session.get("session_version") != user.session_version or not user.is_verified
-                or (user.is_demo and user.demo_expires_at and user.demo_expires_at <= utcnow())):
+                or (user.is_demo and user.demo_expires_at and user.demo_expires_at <= utcnow())
+                or not devices.check(s, user, session.get("sid"), session.get("ss"), utcnow())):
             # Keep the CSRF token: only the login part of this cookie is out of date.
-            session.pop("user_id", None)
-            session.pop("session_version", None)
+            for key in ("user_id", "session_version", "sid", "ss"):
+                session.pop(key, None)
         else:
             g.user = user
 
@@ -249,10 +264,35 @@ def login():
             flash(problem or f"Almost there. We sent a code to {user.email}.", "error" if problem else "message")
             return redirect(url_for("auth.verify"))
         if user:
+            if twostep.is_on(user):
+                return twostep.start(user, next_page)
             log_in(user)
             return redirect(safe_next(next_page))
     status = 401 if error else 200
     return render_template("login.html", error=error, email=email, next=next_page), status
+
+
+@bp.route("/login/code", methods=["GET", "POST"])
+def login_code():
+    """Step two of logging in, for people with two-step sign-in on."""
+    s = db.session()
+    user = s.get(User, session["twostep_user"]) if session.get("twostep_user") else None
+    if user is None or not twostep.is_on(user):
+        return redirect(url_for("auth.login"))
+    error = None
+    if request.method == "POST":
+        moment = utcnow()
+        ok, error = twostep.try_login_code(s, user, request.form.get("code", ""), moment)
+        s.commit()
+        if ok:
+            next_page = session.pop("twostep_next", "")
+            log_in(user, moment)
+            left = twostep.codes_left(s, user)
+            if left <= 2:
+                flash(f"You have {left} recovery {'code' if left == 1 else 'codes'} left. Make new ones in Settings.",
+                      "error")
+            return redirect(safe_next(next_page))
+    return render_template("login_code.html", error=error), 401 if error else 200
 
 
 @bp.route("/signup", methods=["GET", "POST"])
@@ -401,6 +441,10 @@ def reset():
 
 @bp.post("/logout")
 def logout():
+    if session.get("sid"):
+        s = db.session()
+        devices.end(s, session["sid"], utcnow())
+        s.commit()
     session.clear()
     flash("You have logged out.")
     return redirect(url_for("auth.login"))
@@ -433,14 +477,87 @@ def settings():
                 errors["new_password"] = problem
             if not errors:
                 set_password(g.user, new)
+                devices.end_others(s, g.user, session.get("sid"), utcnow())
                 s.commit()
                 # This device stays logged in; every other one is logged out.
                 session["session_version"] = g.user.session_version
                 flash("Your password has been changed. Your other devices are logged out.")
                 return redirect(url_for("auth.settings"))
+        elif action == "logout_others":
+            count = devices.end_others(s, g.user, session.get("sid"), utcnow())
+            s.commit()
+            flash(f"Logged out {count} other {'device' if count == 1 else 'devices'}." if count
+                  else "You weren't logged in anywhere else.")
+            return redirect(url_for("auth.settings"))
+        elif action == "end_session":
+            row_id = request.form.get("session_id", type=int)
+            if row_id and row_id != session.get("sid") and any(row.id == row_id for row in devices.active(s, g.user)):
+                devices.end(s, row_id, utcnow())
+                s.commit()
+                flash("Logged out that device.")
+            return redirect(url_for("auth.settings"))
+        elif action == "twostep_off":
+            if not check_password_hash(g.user.password_hash, request.form.get("current_password", "")):
+                errors["twostep_password"] = "That isn't your current password."
+            else:
+                twostep.turn_off(s, g.user)
+                s.commit()
+                flash("Two-step sign-in is off.")
+                return redirect(url_for("auth.settings"))
+        elif action == "recovery_codes":
+            if not twostep.is_on(g.user):
+                abort(400, "Turn on two-step sign-in first.")
+            if not check_password_hash(g.user.password_hash, request.form.get("current_password", "")):
+                errors["recovery_password"] = "That isn't your current password."
+            else:
+                session["show_codes"] = twostep.new_recovery_codes(s, g.user)
+                s.commit()
+                return redirect(url_for("auth.recovery_codes"))
         else:
             abort(400, "Choose something to change.")
-    return render_template("settings.html", errors=errors, mail_on=mailer.enabled()), 400 if errors else 200
+    s = db.session()
+    return render_template("settings.html", errors=errors, mail_on=mailer.enabled(),
+                           sessions=devices.active(s, g.user), this_session=session.get("sid"),
+                           twostep_on=twostep.is_on(g.user),
+                           codes_left=twostep.codes_left(s, g.user) if twostep.is_on(g.user) else 0), \
+        400 if errors else 200
+
+
+@bp.route("/settings/two-step", methods=["GET", "POST"])
+@login_required
+def twostep_setup():
+    """Turn on two-step sign-in: scan the QR code, then type a code to prove the app has it."""
+    not_for_demo("The demo can't turn on two-step sign-in. Sign up to try it for real.")
+    if twostep.is_on(g.user):
+        return redirect(url_for("auth.settings"))
+    s = db.session()
+    secret = session.get("totp_pending")
+    if not secret or request.method == "GET":
+        secret = session["totp_pending"] = twostep.new_secret()
+    error = None
+    if request.method == "POST":
+        g.user.totp_secret = secret
+        if twostep.check_code(s, g.user, request.form.get("code", ""), utcnow()):
+            g.user.totp_enabled_at = utcnow()
+            session.pop("totp_pending", None)
+            session["show_codes"] = twostep.new_recovery_codes(s, g.user)
+            s.commit()
+            flash("Two-step sign-in is on.")
+            return redirect(url_for("auth.recovery_codes"))
+        s.rollback()
+        error = "That code isn't right. Type the 6 digits your app shows now."
+    return render_template("twostep_setup.html", secret=secret, qr=twostep.qr_svg(g.user, secret), error=error), \
+        400 if error else 200
+
+
+@bp.get("/settings/recovery-codes")
+@login_required
+def recovery_codes():
+    """Shown once, straight after they are made. A reload shows nothing."""
+    codes_now = session.pop("show_codes", None)
+    if not codes_now:
+        return redirect(url_for("auth.settings"))
+    return render_template("recovery_codes.html", codes=codes_now)
 
 
 @bp.get("/dev/outbox")
