@@ -199,7 +199,7 @@ html:not(.js) .js-only { display: none !important; }
   font-family: var(--font-head); font-weight: 700; font-size: 1.3125rem; letter-spacing: -0.02em;
   color: #ffffff !important; text-decoration: none !important; white-space: nowrap;
 }
-.logo-mark { flex: none; border-radius: 22%; }
+.logo-mark { flex: none; }
 .menu-button {
   height: var(--control-height); padding: 0 0.875rem; border-radius: var(--radius);
   background: transparent; color: var(--sidebar-text); border: 1px solid var(--sidebar-active);

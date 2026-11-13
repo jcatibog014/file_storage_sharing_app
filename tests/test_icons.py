@@ -53,9 +53,10 @@ def test_the_app_can_be_installed(client):
     assert "worker-src 'self'" in client.get("/login").headers["Content-Security-Policy"]
 
 
-def test_the_logo_is_the_j_drive_folder(client):
-    logo = (ICONS / "logo.svg").read_text(encoding="utf-8")
-    assert logo.startswith("<svg") and 'id="bg"' in logo and '#4c1d95' in logo
+def test_the_logo_is_the_owners_folder(client):
+    assert png_size(ICONS / "logo.png") == (148, 128)
+    assert (ICONS.parent.parent.parent / "docs" / "logo" / "j-drive-logo-original.png").exists()
+    assert not (ICONS / "logo.svg").exists()  # the old drawing is gone
     page = client.get("/login").get_data(as_text=True)
-    assert "icons/logo.svg" in page
-    assert client.get("/static/icons/logo.svg").mimetype == "image/svg+xml"
+    assert 'icons/logo.png" width="74" height="64"' in page  # the login panel: 64 tall, a little wider
+    assert client.get("/static/icons/logo.png").mimetype == "image/png"

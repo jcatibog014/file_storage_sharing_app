@@ -1,10 +1,10 @@
 {# Line icons, drawn here so no icon font or outside file is needed. #}
 
-{# The app's mark: a white folder with "J:" on a violet tile (static/icons/logo.svg).
-   It is a picture file, not drawn inline, because its gradient has an id that would clash
-   when the logo shows twice on a page. docs/make_icons.py makes the app icons from the same file. #}
+{# The app's mark: the owner's own drawing, a violet folder with a white "J" (static/icons/logo.png,
+   made by docs/make_icons.py from docs/logo/j-drive-logo-original.png). size is its height;
+   the folder is a little wider than tall (148 x 128). #}
 {% macro logo(size=30) %}
-  <img class="logo-mark" src="{{ url_for('static', filename='icons/logo.svg') }}" width="{{ size }}" height="{{ size }}" alt="">
+  <img class="logo-mark" src="{{ url_for('static', filename='icons/logo.png') }}" width="{{ (size * 148 / 128)|round|int }}" height="{{ size }}" alt="">
 {% endmacro %}
 
 {% macro icon(name, size=18) %}

@@ -15,7 +15,7 @@ Python 3.13 is at `%LOCALAPPDATA%\Programs\Python\Python313\python.exe`. Use the
 - Run: `.venv\Scripts\flask --app jdrive run --debug --port 5012`, then open http://127.0.0.1:5012. Without a mail service, sign-up codes are at http://127.0.0.1:5012/dev/outbox (only with `--debug`). (Ports: Swap Meter 5000, Ambon Alert 5001, Ang Gastos! 5002, Sangkap 5003, Gawi 5004, Akda 5005, Hire Wire 5006, Plan-It 5007, ShiroMoto 5008, DFJC 5009, Ticket Tock 5010, Tally Ho! 5011.)
 - Test: `.venv\Scripts\python -m pytest`. Every test gets a fresh SQLite file and bucket folder and never uses the internet. Set `TEST_DATABASE_URL` to an **empty** Neon branch to run the same tests on PostgreSQL (each test drops and remakes the tables). SQLAlchemy warnings fail the tests (`pytest.ini`).
 - Other commands: `set-password <email>`, `tick` (the housekeeping, once), `bucket-cors <site address>` (live bucket only).
-- Logo and app icon: `jdrive/static/icons/logo.svg` (a white folder with "J:" on a violet tile). `docs/make_icons.py` makes every PNG and `favicon.ico` from it; run it after changing the SVG.
+- Logo and app icon: the owner's own drawing, `docs/logo/j-drive-logo-original.png` (a violet folder with a paper and a white "J"). `.venv\Scripts\python docs\make_icons.py` (Pillow) cuts away its shadow and makes `jdrive/static/icons/logo.png` (shown by `logo()` in `_icons.html`, height = size) and every app icon: see-through for tabs and installed apps, on a lilac square for iPhone, and inside the middle 80% for Android's maskable icon. Run it after changing the original.
 
 ## Architecture
 
