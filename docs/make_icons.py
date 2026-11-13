@@ -1,70 +1,115 @@
-r"""Make the logo and app icons (jdrive/static/icons/) from the owner's logo.
+r"""Make the logo and the app icons (jdrive/static/icons/) from the owner's logo.
 
 The logo is the owner's own drawing: a violet folder with a paper sticking
-out and a white "J" on the front (docs/logo/j-drive-logo-original.png). This
-script cuts away its soft shadow and the empty space around it, then saves:
+out, with a soft shadow (docs/logo/jdrive-folder-plain.svg). It also brings a
+dark background (#bg) and a violet glow (#glow) for the app icon. This script:
 
-- logo.png: the folder for the pages (the menu, the login panel), 2x sharp;
-- icon-32/192/512.png and favicon.ico: the folder on a see-through background,
-  for browser tabs and installed apps;
-- apple-touch-icon.png: on a soft lilac square (iPhones don't allow see-through
-  icons, and round the corners themselves);
-- icon-maskable-512.png: on lilac, the folder inside the middle 80%, because
-  Android crops these into its own shape (a circle, a squircle...).
+- copies it to static/icons/logo.svg for the pages (the menu, the login panel);
+- draws icon-32.png and favicon.ico: the folder alone, see-through, for browser tabs;
+- draws the app icons: the folder on the dark tile with the glow behind it.
+  icon-192/512.png keep the tile's round corners (installed apps);
+  apple-touch-icon.png is square (iPhones round the corners themselves);
+  icon-maskable-512.png is square with the folder smaller, inside the middle,
+  because Android crops these into its own shape (a circle, a squircle...).
 
-Run it again after changing the original:
+Phones and browsers want PNG pictures in fixed sizes, so this draws the SVG in
+a browser at each size, through Playwright + Edge (Playwright isn't in
+requirements.txt: borrow another project's):
 
     cd C:\Users\USER\Documents\Workspace\file_storage_sharing_app
-    .venv\Scripts\python docs\make_icons.py
+    ..\expense_tracker\.venv\Scripts\python docs\make_icons.py
 """
+import re
+import struct
 from pathlib import Path
 
-from PIL import Image
+from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).parent.parent
-SOURCE = ROOT / "docs" / "logo" / "j-drive-logo-original.png"
+SOURCE = ROOT / "docs" / "logo" / "jdrive-folder-plain.svg"
 ICONS = ROOT / "jdrive" / "static" / "icons"
-TILE = (243, 238, 254, 255)       # soft lilac behind the folder where a solid square is needed
-LOGO_HEIGHT = 128                 # logo.png: shown at up to 64px tall, so 2x for sharp screens
+# The folder's own box in the drawing (without its shadow), and its middle.
+FOLDER_BOX = "78 100 244 218"
+MIDDLE = (200, 208)
 
 
-def folder():
-    """The folder alone: the shadow (dark, see-through pixels) removed, cropped to the drawing."""
-    picture = Image.open(SOURCE).convert("RGBA")
-    pixels = picture.load()
-    width, height = picture.size
-    for y in range(height):
-        for x in range(width):
-            r, g, b, a = pixels[x, y]
-            if a < 255 and max(r, g, b) < 60:  # the shadow is black with some see-through
-                pixels[x, y] = (0, 0, 0, 0)
-    return picture.crop(picture.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox())
+def parts():
+    """The drawing's <defs> (gradients, shadow) and its folder (the <g> with the shadow)."""
+    svg = SOURCE.read_text(encoding="utf-8")
+    defs = re.search(r"<defs>.*?</defs>", svg, re.S).group(0)
+    folder = re.search(r"<g filter=\"url\(#ds\)\">.*?</g>", svg, re.S).group(0)
+    return defs, folder
 
 
-def fitted(drawing, size, share, background=(0, 0, 0, 0)):
-    """The drawing in the middle of a size x size square, its longer side `share` of the square."""
-    scale = size * share / max(drawing.size)
-    small = drawing.resize((max(1, round(drawing.width * scale)), max(1, round(drawing.height * scale))),
-                           Image.LANCZOS)
-    square = Image.new("RGBA", (size, size), background)
-    square.alpha_composite(small, ((size - small.width) // 2, (size - small.height) // 2))
-    return square
+def plain_svg(size):
+    """The folder alone on nothing, filling the square (for browser tabs)."""
+    defs, folder = parts()
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{FOLDER_BOX}" width="{size}" height="{size}">'
+            f"{defs}{folder}</svg>")
+
+
+def tile_svg(size, rounded, scale):
+    """The folder on the dark tile, with the violet glow behind it."""
+    defs, folder = parts()
+    corner = 88 if rounded else 0
+    x, y = MIDDLE
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="{size}" height="{size}">{defs}'
+            f'<rect width="400" height="400" rx="{corner}" fill="url(#bg)"/>'
+            f'<circle cx="200" cy="205" r="175" fill="url(#glow)"/>'
+            f'<g transform="translate(200 205) scale({scale}) translate({-x} {-y})">{folder}</g></svg>')
+
+
+# (file, size, how): "plain" = the folder alone; "rounded"/"square" = on the tile;
+# "maskable" = on the square tile, smaller, inside Android's safe circle.
+PNGS = [
+    ("icon-32.png", 32, "plain"),
+    ("icon-192.png", 192, "rounded"),
+    ("icon-512.png", 512, "rounded"),
+    ("apple-touch-icon.png", 180, "square"),
+    ("icon-maskable-512.png", 512, "maskable"),
+]
+ICO_SIZES = (16, 32, 48)
+
+
+def svg_for(how, size):
+    if how == "plain":
+        return plain_svg(size)
+    if how == "maskable":
+        return tile_svg(size, rounded=False, scale=1.0)
+    return tile_svg(size, rounded=how == "rounded", scale=1.28)
+
+
+def render(browser, svg, size):
+    page = browser.new_page(viewport={"width": size, "height": size})
+    page.set_content(f'<style>html, body {{ margin: 0; background: transparent; }} svg {{ display: block; }}</style>'
+                     f'<div id="icon">{svg}</div>')
+    png = page.locator("#icon svg").screenshot(omit_background=True)
+    page.close()
+    return png
+
+
+def write_ico(path, pictures):
+    """favicon.ico is a small header, a list, then the PNG files themselves."""
+    header = struct.pack("<HHH", 0, 1, len(pictures))
+    offset = 6 + 16 * len(pictures)
+    entries, data = b"", b""
+    for size, png in pictures:
+        entries += struct.pack("<BBBBHHII", size, size, 0, 0, 1, 32, len(png), offset + len(data))
+        data += png
+    path.write_bytes(header + entries + data)
 
 
 def main():
-    drawing = folder()
-    logo = drawing.resize((round(drawing.width * LOGO_HEIGHT / drawing.height), LOGO_HEIGHT), Image.LANCZOS)
-    logo.save(ICONS / "logo.png", optimize=True)
-    print("saved logo.png", logo.size)
-    for name, size in (("icon-32.png", 32), ("icon-192.png", 192), ("icon-512.png", 512)):
-        fitted(drawing, size, 0.96).save(ICONS / name, optimize=True)
-        print("saved", name)
-    fitted(drawing, 180, 0.78, TILE).convert("RGB").save(ICONS / "apple-touch-icon.png", optimize=True)
-    print("saved apple-touch-icon.png")
-    fitted(drawing, 512, 0.66, TILE).convert("RGB").save(ICONS / "icon-maskable-512.png", optimize=True)
-    print("saved icon-maskable-512.png")
-    fitted(drawing, 256, 0.96).save(ICONS / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)])
-    print("saved favicon.ico")
+    (ICONS / "logo.svg").write_text(SOURCE.read_text(encoding="utf-8"), encoding="utf-8")
+    print("saved logo.svg")
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(channel="msedge")
+        for name, size, how in PNGS:
+            (ICONS / name).write_bytes(render(browser, svg_for(how, size), size))
+            print("saved", name)
+        write_ico(ICONS / "favicon.ico", [(size, render(browser, plain_svg(size), size)) for size in ICO_SIZES])
+        print("saved favicon.ico")
+        browser.close()
 
 
 if __name__ == "__main__":
