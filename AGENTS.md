@@ -15,7 +15,7 @@ Python 3.13 is at `%LOCALAPPDATA%\Programs\Python\Python313\python.exe`. Use the
 - Run: `.venv\Scripts\flask --app jdrive run --debug --port 5012`, then open http://127.0.0.1:5012. Without a mail service, sign-up codes are at http://127.0.0.1:5012/dev/outbox (only with `--debug`). (Ports: Swap Meter 5000, Ambon Alert 5001, Ang Gastos! 5002, Sangkap 5003, Gawi 5004, Akda 5005, Hire Wire 5006, Plan-It 5007, ShiroMoto 5008, DFJC 5009, Ticket Tock 5010, Tally Ho! 5011.)
 - Test: `.venv\Scripts\python -m pytest`. Every test gets a fresh SQLite file and bucket folder and never uses the internet. Set `TEST_DATABASE_URL` to an **empty** Neon branch to run the same tests on PostgreSQL (each test drops and remakes the tables). SQLAlchemy warnings fail the tests (`pytest.ini`).
 - Other commands: `set-password <email>`, `tick` (the housekeeping, once), `bucket-cors <site address>` (live bucket only).
-- Logo and app icon: `jdrive/static/icons/logo.svg` (a white folder with "J:" on a violet tile). `docs/make_icons.py` makes every PNG and `favicon.ico` from it; run it after changing the SVG.
+- Logo and app icon: the owner's own drawing, `docs/logo/jdrive-folder-plain.svg` (a violet folder with a paper and a soft shadow; it also defines a dark `#bg` and a violet `#glow` for the app icon). `..\expense_tracker\.venv\Scripts\python docs\make_icons.py` (Playwright + Edge) copies it to `jdrive/static/icons/logo.svg` (shown by `logo()` in `_icons.html` as an `<img>`, height = size) and draws every icon: the plain folder for browser tabs (`icon-32.png`, `favicon.ico`), and the folder on the dark tile with the glow for installed apps (round corners), iPhone (square) and Android's maskable icon (smaller, square). Run it after changing the drawing.
 
 ## Architecture
 

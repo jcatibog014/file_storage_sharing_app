@@ -53,9 +53,12 @@ def test_the_app_can_be_installed(client):
     assert "worker-src 'self'" in client.get("/login").headers["Content-Security-Policy"]
 
 
-def test_the_logo_is_the_j_drive_folder(client):
+def test_the_logo_is_the_owners_folder(client):
+    source = (ICONS.parent.parent.parent / "docs" / "logo" / "jdrive-folder-plain.svg").read_text(encoding="utf-8")
     logo = (ICONS / "logo.svg").read_text(encoding="utf-8")
-    assert logo.startswith("<svg") and 'id="bg"' in logo and '#4c1d95' in logo
+    assert logo == source  # the pages show the owner's drawing exactly
+    assert 'id="glow"' in logo and 'filter="url(#ds)"' in logo
+    assert not (ICONS / "logo.png").exists()
     page = client.get("/login").get_data(as_text=True)
-    assert "icons/logo.svg" in page
+    assert 'icons/logo.svg" width="79" height="72"' in page  # the login panel: 72 tall, a little wider
     assert client.get("/static/icons/logo.svg").mimetype == "image/svg+xml"
