@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf %}
+{% block title %}Move {{ item.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <section class="card narrow move-card">
+    <h1 class="card-heading">Move {{ item.name }}</h1>
+    <p class="muted">Open a folder, then press Move here.</p>
+    <nav class="breadcrumbs" aria-label="Where you are">
+      <ol>
+        {% if can_go_top %}<li><a href="{{ url_for('drive.move', item_id=item.id, at=0) }}">My Drive</a></li>{% endif %}
+        {% for crumb in at_path %}
+          {% if loop.last %}<li aria-current="page">{{ crumb.name }}</li>
+          {% else %}<li><a href="{{ url_for('drive.move', item_id=item.id, at=crumb.id) }}">{{ crumb.name }}</a></li>{% endif %}
+        {% endfor %}
+      </ol>
+    </nav>
+    <ul class="move-list">
+      {% for f in folders %}
+        <li><a href="{{ url_for('drive.move', item_id=item.id, at=f.id) }}"><span class="type-icon type-folder">{{ icon('folder') }}</span> {{ f.name }} {{ icon('chevron-right', 16) }}</a></li>
+      {% else %}
+        <li class="muted move-none">No folders in here.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" class="form-actions">
+      {{ csrf() }}
+      <input type="hidden" name="target_id" value="{{ at.id if at else '' }}">
+      {% if problem %}<p class="muted small spacer">{{ problem }}</p>{% endif %}
+      <a class="button button-quiet" href="{{ parent_url(item) }}">Cancel</a>
+      <button class="button" type="submit"{% if problem %} disabled{% endif %}>Move here</button>
+    </form>
+  </section>
+{% endblock %}

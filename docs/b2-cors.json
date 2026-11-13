@@ -1,0 +1,10 @@
+[
+  {
+    "corsRuleName": "j-drive-uploads",
+    "allowedOrigins": ["https://j-drive.onrender.com"],
+    "allowedHeaders": ["content-type"],
+    "allowedOperations": ["s3_put", "s3_get", "s3_head"],
+    "exposeHeaders": ["etag"],
+    "maxAgeSeconds": 3600
+  }
+]

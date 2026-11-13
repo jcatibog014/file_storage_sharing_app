@@ -1,0 +1,54 @@
+# Render "Blueprint": tells Render how to build and run J: Drive.
+# Render reads this file when you choose New -> Blueprint and pick this repo.
+# The service name becomes the web address: j-drive.onrender.com
+# (Render adds a few letters if that name is already taken).
+# Every merge into main deploys the site again by itself.
+#
+# Render's free plan forgets its own files on every restart, so nothing lives
+# there: the data is in Neon (free PostgreSQL) and the files are in Backblaze B2
+# (a private bucket). The step-by-step guide is docs/DEPLOY.md.
+services:
+  - type: web
+    name: j-drive
+    runtime: python  # the version comes from the .python-version file
+    plan: free  # sleeps after 15 quiet minutes; the next visit wakes it up (about 30-50 s)
+    region: singapore  # close to the Philippines, and to Neon's Singapore database
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    # First upgrade-db runs the Alembic migrations (it keeps all data, and does
+    # nothing when the tables are up to date). Then gunicorn calls create_app()
+    # to build the app and serves it on Render's port. --timeout 120: a big
+    # folder ZIP streams for a while.
+    startCommand: flask --app jdrive upgrade-db && gunicorn "jdrive:create_app()" --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # Signs the login cookie, the email codes and the share-link secrets. Render
+      # makes a long random one. Never change it later: every share link would change.
+      - key: SECRET_KEY
+        generateValue: true
+      # The secret the GitHub Actions timer sends to /tasks/tick (copy it into
+      # the repo's TICK_KEY secret). Render makes it.
+      - key: TICK_KEY
+        generateValue: true
+      # Neon's connection string (postgresql://...). Render asks for these when
+      # you make the Blueprint; they are never written in this file.
+      - key: DATABASE_URL
+        sync: false
+      # Backblaze B2 (docs/DEPLOY.md, part 2).
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_KEY_ID
+        sync: false
+      - key: S3_SECRET
+        sync: false
+      # Brevo, for emails (docs/DEPLOY.md, part 3). MAIL_FROM is your own
+      # address that Brevo has checked.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false

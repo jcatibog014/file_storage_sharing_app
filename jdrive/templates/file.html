@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf, avatar %}
+{% from "_items.html" import breadcrumbs, item_menu, type_icon, star_button with context %}
+{% from "_preview.html" import preview_box with context %}
+{% from "_activity.html" import activity_lines with context %}
+{% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {{ breadcrumbs(crumbs, top_label=crumb_top[0], top_url=crumb_top[1]) }}
+  <div class="page-head">
+    <div>
+      <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span>{{ star_button(item, is_starred) }}</h1>
+      <p class="lead">{{ KIND_NAMES[kind_of(item)] }} &middot; {{ item.size|filesize }} &middot; {{ 'yours' if access.role == 'owner' else 'you are ' ~ a_role(access.role) }}</p>
+    </div>
+    <div class="head-actions">
+      {% block file_actions %}{% endblock %}
+      {% if access.can('share') %}
+        <a class="button button-quiet" href="{{ url_for('share.page', item_id=item.id) }}">{{ icon('share', 16) }} Share{% if people %} <span class="button-count">{{ people }}</span>{% endif %}</a>
+      {% endif %}
+      {{ item_menu(item, access.role, show_download=False) }}
+      <a class="button" href="{{ url_for('drive.download', item_id=item.id) }}">{{ icon('download', 16) }} Download</a>
+    </div>
+  </div>
+
+  <div class="file-layout">
+    <section class="preview-area">
+      {{ preview_box(item, preview, url_for('find.preview', item_id=item.id), text, more_text) }}
+    </section>
+    <aside class="side-panel">
+      <section class="card details-card">
+        <h2>Details</h2>
+        <dl class="details">
+          <dt>Type</dt><dd>{{ KIND_NAMES[kind_of(item)] }} <span class="muted small">({{ item.content_type }})</span></dd>
+          <dt>Size</dt><dd>{{ item.size|filesize }}</dd>
+          <dt>Owner</dt><dd>{{ 'You' if item.owner_id == g.user.id else item.owner.name }}</dd>
+          {% if version and version.uploaded_by %}<dt>Uploaded by</dt><dd>{{ 'You' if version.uploaded_by_id == g.user.id else version.uploaded_by.name }}</dd>{% endif %}
+          <dt>Added</dt><dd>{{ item.created_at|nice_datetime }}</dd>
+          <dt>Last changed</dt><dd>{{ item.updated_at|nice_datetime }}</dd>
+        </dl>
+      </section>
+      <section class="card versions-card">
+        <div class="card-head">
+          <h2>Versions</h2>
+          {% if access.can('new_version') %}
+            <form class="upload-form" method="post" action="{{ url_for('drive.upload_form') }}" enctype="multipart/form-data"
+                  data-upload data-target="{{ item.id }}">
+              {{ csrf() }}
+              <input type="hidden" name="target_id" value="{{ item.id }}">
+              <label class="button button-quiet button-small upload-button">
+                {{ icon('upload', 14) }} Upload new version
+                <input class="upload-input" type="file" name="files" data-upload-input>
+              </label>
+              <button class="button button-small no-js-only" type="submit">Send</button>
+            </form>
+          {% endif %}
+        </div>
+        <ol class="versions">
+          {% for v in versions %}
+            <li class="version{% if loop.first %} is-current{% endif %}">
+              <div class="version-text">
+                <strong>Version {{ v.number }}</strong>{% if loop.first %} <span class="badge badge-accent">Current</span>{% endif %}
+                <small>{{ v.created_at|nice_datetime }} &middot; {{ v.size|filesize }}{% if v.uploaded_by %} &middot; {{ 'you' if v.uploaded_by_id == g.user.id else v.uploaded_by.first_name }}{% endif %}</small>
+              </div>
+              {% if not loop.first %}
+                <details class="item-menu" data-popover>
+                  <summary class="icon-button" title="More for version {{ v.number }}"><span class="visually-hidden">More for version {{ v.number }}</span>{{ icon('more') }}</summary>
+                  <div class="menu-items">
+                    <a href="{{ url_for('drive.download_version', item_id=item.id, version_id=v.id) }}">{{ icon('download', 16) }} Download</a>
+                    {% if access.can('new_version') %}
+                      <form method="post" action="{{ url_for('drive.restore_version', item_id=item.id, version_id=v.id) }}">
+                        {{ csrf() }}<button type="submit">{{ icon('restore', 16) }} Make current</button>
+                      </form>
+                    {% endif %}
+                    {% if access.can('delete_version') %}
+                      <form method="post" action="{{ url_for('drive.delete_version', item_id=item.id, version_id=v.id) }}"
+                            data-confirm="Delete version {{ v.number }} for good?">
+                        {{ csrf() }}<button type="submit" class="danger">{{ icon('trash', 16) }} Delete</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </details>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        <p class="muted small">The newest {{ MAX_VERSIONS }} are kept.</p>
+      </section>
+      {% if history %}
+        <section class="card">
+          <h2>Activity</h2>
+          {{ activity_lines(history, show_item=False) }}
+        </section>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{# Messages after an action, as small notes at the bottom right. Good news fades away by itself
+   (app.js; the demo welcome stays longer, and a note waits while the mouse or keyboard is on it);
+   an error stays until it is closed. Without JavaScript they simply stay. #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="toasts" role="status" aria-live="polite">
+      {% for category, message in messages %}
+        {% if category == 'demo' %}
+          <div class="toast toast-demo" data-toast-fade data-toast-wait="15000">
+            <span><strong>Demo</strong> {{ message }}
+              <a href="{{ url_for('auth.signup') }}">Sign up for real</a></span>
+            <button class="toast-close" type="button" data-toast-close hidden aria-label="Close">&times;</button>
+          </div>
+        {% else %}
+          <p class="toast {{ 'toast-error' if category == 'error' else 'toast-ok' }}"{% if category != 'error' %} data-toast-fade{% endif %}>
+            <span>{{ message }}</span>
+            <button class="toast-close" type="button" data-toast-close hidden aria-label="Close">&times;</button>
+          </p>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_items.html" import access_list with context %}
+{% block title %}Starred - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Starred</h1><p class="lead">Your favourite files and folders, one click away.</p></div></div>
+  {% if rows %}
+    {{ access_list(rows, starred=rows|map(attribute='item.id')|list) }}
+  {% else %}
+    <div class="empty-state">{{ icon('star', 56) }}<h2>No Stars Yet</h2>
+      <p>Press the star by a name, or Add star in its menu, to keep it here.</p></div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{# The path inside a shared link: it starts at the linked item, never above it. #}
+{% if path|length > 1 %}
+  <nav class="breadcrumbs" aria-label="Folder path">
+    <ol>
+      {% for crumb in path %}
+        {% if loop.last %}<li aria-current="page">{{ crumb.name }}</li>
+        {% elif loop.first %}<li><a href="{{ url_for('public.link', token=token) }}">{{ crumb.name }}</a></li>
+        {% else %}<li><a href="{{ url_for('public.inside', token=token, item_id=crumb.id) }}">{{ crumb.name }}</a></li>{% endif %}
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}

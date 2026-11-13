@@ -1,0 +1,12 @@
+Flask>=3.1,<4
+SQLAlchemy>=2.0,<2.1  # the ORM: models.py is the data model in Python classes
+alembic>=1.13,<2  # database migrations (flask --app jdrive upgrade-db)
+psycopg[binary]>=3.2,<4  # talks to PostgreSQL (Neon) on the live site; SQLite needs nothing extra
+boto3>=1.35,<2  # talks to the bucket (Backblaze B2 through its S3 API) and makes signed links
+Pillow>=11,<13  # picture previews: small WebP thumbnails
+pyotp>=2.9,<3  # two-step sign-in codes from an authenticator app
+segno>=1.6,<2  # draws the QR code for two-step sign-in, as SVG
+tzdata>=2025.1  # time zone data (Windows doesn't have it built in)
+gunicorn>=23  # the web server on Render (Linux only; locally use "flask run")
+pytest>=8
+moto[s3]>=5,<6  # a pretend S3 bucket, so the tests check the real boto3 code without the internet

@@ -1,0 +1,70 @@
+{# Line icons, drawn here so no icon font or outside file is needed. #}
+
+{# The app's mark: a white folder with "J:" on a violet tile (static/icons/logo.svg).
+   It is a picture file, not drawn inline, because its gradient has an id that would clash
+   when the logo shows twice on a page. docs/make_icons.py makes the app icons from the same file. #}
+{% macro logo(size=30) %}
+  <img class="logo-mark" src="{{ url_for('static', filename='icons/logo.svg') }}" width="{{ size }}" height="{{ size }}" alt="">
+{% endmacro %}
+
+{% macro icon(name, size=18) %}
+  <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {% if name == 'drive' %}<path d="M3 13l3-8h12l3 8"></path><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 16.5h.01M11 16.5h.01"></path>
+  {% elif name == 'folder' %}<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"></path>
+  {% elif name == 'folder-plus' %}<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"></path><path d="M12 11v6M9 14h6"></path>
+  {% elif name == 'folder-shared' %}<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"></path><circle cx="12" cy="12.5" r="2"></circle><path d="M8.5 17.5a3.5 3.5 0 0 1 7 0"></path>
+  {% elif name == 'upload' %}<path d="M12 16V4M7 9l5-5 5 5M5 20h14"></path>
+  {% elif name == 'download' %}<path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path>
+  {% elif name == 'share' %}<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M19 8v6M16 11h6"></path>
+  {% elif name == 'people' %}<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16.5 14.5A5 5 0 0 1 21.5 19"></path>
+  {% elif name == 'person' %}<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>
+  {% elif name == 'link' %}<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path>
+  {% elif name == 'star' %}<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path>
+  {% elif name == 'star-filled' %}<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor"></path>
+  {% elif name == 'clock' %}<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>
+  {% elif name == 'trash' %}<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path>
+  {% elif name == 'restore' %}<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>
+  {% elif name == 'settings' %}<circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path>
+  {% elif name == 'search' %}<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path>
+  {% elif name == 'plus' %}<path d="M12 5v14M5 12h14"></path>
+  {% elif name == 'pencil' %}<path d="M4 20l1-4L16 5a2 2 0 0 1 3 3L8 19z"></path><path d="M14 7l3 3"></path>
+  {% elif name == 'move' %}<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"></path><path d="M9 13.5h6M13 11.5l2 2-2 2"></path>
+  {% elif name == 'more' %}<circle cx="5" cy="12" r="1.3" fill="currentColor"></circle><circle cx="12" cy="12" r="1.3" fill="currentColor"></circle><circle cx="19" cy="12" r="1.3" fill="currentColor"></circle>
+  {% elif name == 'arrow' %}<path d="M5 12h14M13 6l6 6-6 6"></path>
+  {% elif name == 'back' %}<path d="M19 12H5M11 6l-6 6 6 6"></path>
+  {% elif name == 'chevron-right' %}<path d="M9 6l6 6-6 6"></path>
+  {% elif name == 'chevron-down' %}<path d="M6 9l6 6 6-6"></path>
+  {% elif name == 'check' %}<path d="M5 12l5 5 9-10"></path>
+  {% elif name == 'x' %}<path d="M6 6l12 12M18 6L6 18"></path>
+  {% elif name == 'lock' %}<rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+  {% elif name == 'key' %}<circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M16 7l3 3M14 9l2 2"></path>
+  {% elif name == 'shield' %}<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path><path d="M9 12l2 2 4-4"></path>
+  {% elif name == 'eye' %}<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>
+  {% elif name == 'eye-off' %}<path d="M3 3l18 18"></path><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.7 8.5 2 12 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>
+  {% elif name == 'history' %}<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path>
+  {% elif name == 'layers' %}<path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path>
+  {% elif name == 'bell' %}<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 20a2 2 0 0 0 4 0"></path>
+  {% elif name == 'activity' %}<path d="M3 12h4l3-8 4 16 3-8h4"></path>
+  {% elif name == 'device' %}<rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path>
+  {% elif name == 'grid' %}<rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect>
+  {% elif name == 'list' %}<path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4 6h.01M4 12h.01M4 18h.01"></path>
+  {% elif name == 'copy' %}<rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path>
+  {% elif name == 'info' %}<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 7.5v.5"></path>
+  {% elif name == 'alert' %}<path d="M12 3l10 18H2z"></path><path d="M12 10v4M12 17.5v.5"></path>
+  {% elif name == 'mail' %}<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path>
+  {% elif name == 'zip' %}<path d="M6 3h9l4 4v14H6z"></path><path d="M11 3v2h2v2h-2v2h2v2h-2v3"></path><rect x="10" y="14" width="3" height="3" rx="0.5"></rect>
+  {# File types: a page with a corner, and a mark for the kind. #}
+  {% elif name == 'file' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path>
+  {% elif name == 'file-image' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><circle cx="10" cy="12" r="1.5"></circle><path d="M7 19l4-4 2 2 2-2 3 3"></path>
+  {% elif name == 'file-pdf' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M9 17v-4h1.5a1.25 1.25 0 0 1 0 2.5H9"></path><path d="M14 13v4"></path>
+  {% elif name == 'file-doc' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M9 12h7M9 15h7M9 18h4"></path>
+  {% elif name == 'file-sheet' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><rect x="8.5" y="11.5" width="8" height="7" rx="0.5"></rect><path d="M12.5 11.5v7M8.5 15h8"></path>
+  {% elif name == 'file-slides' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><rect x="8.5" y="12" width="8" height="5.5" rx="0.5"></rect>
+  {% elif name == 'file-video' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M10.5 12.5v5l4-2.5z"></path>
+  {% elif name == 'file-audio' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M11 17.5v-5l4-1v5"></path><circle cx="10" cy="17.5" r="1"></circle><circle cx="14" cy="16.5" r="1"></circle>
+  {% elif name == 'file-text' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M9 13h7M9 16h5"></path>
+  {% elif name == 'file-zip' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M11 9v2h1.5v2H11v2h1.5"></path><rect x="10.5" y="16" width="2.5" height="2.5" rx="0.5"></rect>
+  {% elif name == 'file-code' %}<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M10.5 12.5L8.5 15l2 2.5M14.5 12.5l2 2.5-2 2.5"></path>
+  {% endif %}
+  </svg>
+{% endmacro %}

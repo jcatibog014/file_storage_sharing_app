@@ -1,0 +1,10 @@
+{% from "_icons.html" import logo %}
+{# The top bar on shared-link pages: no menu, because a visitor may have no account. #}
+<header class="public-top">
+  <a class="logo" href="{{ url_for('drive.index') }}">{{ logo() }} {{ APP_NAME }}</a>
+  <div class="public-top-links">
+    {% if g.user %}<a href="{{ url_for('drive.home') }}">My Drive</a>
+    {% else %}<a href="{{ url_for('auth.login') }}">Log in</a>
+      <a class="button button-small" href="{{ url_for('auth.signup') }}">Sign up</a>{% endif %}
+  </div>
+</header>

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Sign Up - {{ APP_NAME }}{% endblock %}
+{% block body_class %}welcome-layout{% endblock %}
+{% block layout_class %}{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block content %}
+  <div class="welcome">
+    {% include "_welcome.html" %}
+    <section class="welcome-cards">
+      <div class="card">
+        <h1>Sign Up</h1>
+        <p class="lead">We'll email you a code to check that the address is yours.</p>
+        <form method="post" action="{{ url_for('auth.signup') }}" class="stack" novalidate>
+          {{ csrf() }}
+          <input type="hidden" name="next" value="{{ next }}">
+          <label class="hp" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+          {{ field('name', 'Your name', name, errors.name, attrs='autocomplete="name" required maxlength="80" autofocus') }}
+          {{ field('email', 'Email', email, errors.email, type='email', attrs='autocomplete="email" required') }}
+          {{ field('password', 'Password', '', errors.password, type='password', hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+          {{ field('confirm_password', 'Password again', type='password', attrs='autocomplete="new-password" required') }}
+          <button class="button" type="submit">Sign up</button>
+        </form>
+        <p class="card-note">Have an account? <a href="{{ url_for('auth.login', next=next or none) }}">Log in</a></p>
+      </div>
+    </section>
+  </div>
+{% endblock %}

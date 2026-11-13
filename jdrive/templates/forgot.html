@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Forgot Password - {{ APP_NAME }}{% endblock %}
+{% block body_class %}welcome-layout{% endblock %}
+{% block layout_class %}{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block content %}
+  <div class="welcome">
+    {% include "_welcome.html" %}
+    <section class="welcome-cards">
+      <div class="card">
+        <h1>Forgot Password</h1>
+        <p class="lead">We'll email you a code to set a new one.</p>
+        <form method="post" action="{{ url_for('auth.forgot') }}" class="stack">
+          {{ csrf() }}
+          {{ field('email', 'Email', email, error, type='email', attrs='autocomplete="email" required autofocus') }}
+          <button class="button" type="submit">Send the code</button>
+        </form>
+        <p class="card-note"><a href="{{ url_for('auth.login') }}">Back to log in</a></p>
+      </div>
+    </section>
+  </div>
+{% endblock %}

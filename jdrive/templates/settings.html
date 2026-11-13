@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% from "_icons.html" import icon %}
+{% block title %}Settings - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Settings</h1></div></div>
+  {# The demo sees these as examples, switched off. The server refuses its changes anyway. #}
+  {% set locked = 'disabled' if g.user.is_demo else '' %}
+  <div class="settings">
+    {# The theme lives in the browser, so this needs JavaScript. app.js shows it. #}
+    <section class="setting" data-theme-settings hidden>
+      <div class="setting-text">
+        <h2>Appearance</h2>
+        <p>Device follows your phone or computer. Saved in this browser.</p>
+      </div>
+      <fieldset class="theme-choice">
+        <legend class="visually-hidden">Theme</legend>
+        <label><input type="radio" name="theme" value="system"><span>Device</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+      </fieldset>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Name</h2>
+        <p>People you share with see it.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="name">
+        <fieldset class="plain-fieldset" {{ locked }}>
+          <div class="inline-save{% if errors.name %} has-error{% endif %}">
+            <label class="visually-hidden" for="name">Your name</label>
+            <input type="text" id="name" name="name" value="{{ g.user.name }}" required maxlength="80" autocomplete="name"
+                   {% if errors.name %}aria-invalid="true" aria-describedby="name-error"{% endif %}>
+            <button class="button" type="submit">Save</button>
+          </div>
+          {% if errors.name %}<p class="field-error" id="name-error">{{ errors.name }}</p>{% endif %}
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Password</h2>
+        <p>Changing it logs you out on your other devices.</p>
+      </div>
+      <details class="setting-fold"{% if errors.password_current or errors.new_password %} open{% endif %}>
+        <summary class="button button-quiet">{{ icon('lock', 16) }} Change password</summary>
+        <form method="post">
+          {{ csrf() }}
+          <input type="hidden" name="action" value="password">
+          <fieldset class="stack plain-fieldset" {{ locked }}>
+            {{ field('current_password', 'Current password', '', errors.password_current, type='password', attrs='autocomplete="current-password" required') }}
+            {{ field('new_password', 'New password', '', errors.new_password, type='password', hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+            {{ field('confirm_password', 'New password again', type='password', attrs='autocomplete="new-password" required') }}
+            <div class="form-actions"><button class="button" type="submit">Save new password</button></div>
+          </fieldset>
+        </form>
+      </details>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Two-Step Sign-In</h2>
+        <p>{% if twostep_on %}On. Logging in also needs a code from your phone. {{ plural(codes_left, 'recovery code') }} left.
+           {% else %}Off. Turn it on so a stolen password isn't enough to get in.{% endif %}</p>
+      </div>
+      {% if twostep_on %}
+        <div class="setting-links">
+          <details class="setting-fold"{% if errors.recovery_password %} open{% endif %}>
+            <summary class="button button-quiet">{{ icon('key', 16) }} New recovery codes</summary>
+            <form method="post" class="stack">
+              {{ csrf() }}
+              <input type="hidden" name="action" value="recovery_codes">
+              {{ field('current_password', 'Current password', '', errors.recovery_password, type='password', attrs='autocomplete="current-password" required') }}
+              <div class="form-actions"><button class="button" type="submit">Make new codes</button></div>
+            </form>
+          </details>
+          <details class="setting-fold"{% if errors.twostep_password %} open{% endif %}>
+            <summary class="button button-danger">Turn off</summary>
+            <form method="post" class="stack">
+              {{ csrf() }}
+              <input type="hidden" name="action" value="twostep_off">
+              {{ field('current_password', 'Current password', '', errors.twostep_password, type='password', attrs='autocomplete="current-password" required') }}
+              <div class="form-actions"><button class="button button-danger" type="submit">Turn off two-step sign-in</button></div>
+            </form>
+          </details>
+        </div>
+      {% else %}
+        <div class="form-actions">
+          {% if g.user.is_demo %}<button class="button" type="button" disabled>{{ icon('shield', 16) }} Turn on</button>
+          {% else %}<a class="button" href="{{ url_for('auth.twostep_setup') }}">{{ icon('shield', 16) }} Turn on</a>{% endif %}
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Where You're Logged In</h2>
+        <p>Don't know one? Log it out, then change your password.</p>
+      </div>
+      <div class="device-list">
+        <ul>
+          {% for row in sessions %}
+            <li class="device">
+              {{ icon('device', 20) }}
+              <span class="device-text"><strong>{{ row.device }}</strong>{% if row.id == this_session %} <span class="badge badge-accent">This device</span>{% endif %}
+                <small>{{ row.ip }} &middot; last seen {{ row.last_seen_at|ago }}</small></span>
+              {% if row.id != this_session %}
+                <form method="post">
+                  {{ csrf() }}<input type="hidden" name="action" value="end_session"><input type="hidden" name="session_id" value="{{ row.id }}">
+                  <button class="button button-quiet button-small" type="submit"{% if g.user.is_demo %} disabled{% endif %}>Log out</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        {% if sessions|length > 1 %}
+          <form method="post" class="form-actions">
+            {{ csrf() }}<input type="hidden" name="action" value="logout_others">
+            <button class="button button-quiet" type="submit"{% if g.user.is_demo %} disabled{% endif %}>Log out other devices</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Activity</h2>
+        <p>Everything that happened to your files, and everything you did.</p>
+      </div>
+      <div class="form-actions"><a class="button button-quiet" href="{{ url_for('activity_views.page') }}">{{ icon('activity', 16) }} Open activity</a></div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Install the App</h2>
+        <p>Put J: Drive on your home screen. It opens in its own window.</p>
+      </div>
+      <div class="setting-links">
+        <button class="button button-quiet" type="button" data-install hidden>Install J: Drive</button>
+        <p class="muted small">iPhone: in Safari, press Share, then Add to Home Screen.
+          Android and computers: open the browser's menu and choose Install.</p>
+      </div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Account</h2>
+        {% if g.user.is_demo %}
+          <p>This is the demo, so its name and password can't be changed.</p>
+        {% else %}
+          <p>Logged in as {{ g.user.email }}.</p>
+        {% endif %}
+      </div>
+      <div class="form-actions">
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          {{ csrf() }}
+          <button class="button button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </section>
+  </div>
+{% endblock %}

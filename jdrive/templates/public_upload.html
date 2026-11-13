@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import csrf %}
+{% block title %}Send Files - {{ APP_NAME }}{% endblock %}
+{% block body_class %}public-layout{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block public_top %}{% include "_public_top.html" %}{% endblock %}
+{% block content %}
+  <section class="card narrow center-card drop-card">
+    <span class="lock-mark">{{ icon('upload', 28) }}</span>
+    <h1 class="card-heading">Send Files to {{ item.owner.first_name }}</h1>
+    <p class="muted">Your files go into the folder <strong>{{ item.name }}</strong>. You can't see what others sent.</p>
+    <div class="drop-zone drop-zone-small" data-drop-zone>
+      <form class="upload-form upload-form-wide" method="post" action="{{ url_for('public.upload_form', token=token) }}"
+            enctype="multipart/form-data" data-upload data-api="{{ url_for('public.link', token=token) }}/api">
+        {{ csrf() }}
+        <label class="button upload-button">
+          {{ icon('upload', 16) }} Choose files
+          <input class="upload-input" type="file" name="files" multiple data-upload-input>
+        </label>
+        <button class="button no-js-only" type="submit">Send files</button>
+      </form>
+      <p class="muted small js-only">or drop them here</p>
+      <div class="drop-hint" aria-hidden="true">{{ icon('upload', 40) }} Drop to send</div>
+    </div>
+    {% if sent %}
+      <div class="sent-list">
+        <h2>You Sent</h2>
+        <ul>{% for name in sent|reverse %}<li>{{ icon('check', 14) }} {{ name }}</li>{% endfor %}</ul>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

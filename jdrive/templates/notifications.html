@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Notifications - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Notifications</h1></div></div>
+  {% if rows %}
+    <ul class="notice-list">
+      {% for row in rows %}
+        <li class="notice{% if row.id in unread %} is-unread{% endif %}">
+          {{ icon('bell', 18) }}
+          <span class="notice-text">
+            {% if row.url %}<a href="{{ row.url }}">{{ row.text }}</a>{% else %}{{ row.text }}{% endif %}
+            <small>{{ row.at|ago }}</small>
+          </span>
+          {% if row.id in unread %}<span class="badge badge-accent">New</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">{{ icon('bell', 56) }}<h2>All Quiet</h2><p>When someone shares with you or sends you files, you'll see it here.</p></div>
+  {% endif %}
+{% endblock %}

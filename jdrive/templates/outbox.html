@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Outbox - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>Outbox</h1>
+    <p class="lead">No mail service is set up, so these emails were not sent. Only shown on your own computer.</p></div></div>
+  {% for mail in emails %}
+    <section class="card">
+      <strong>{{ mail['Subject'] }}</strong>
+      <p class="muted small">To {{ mail['To'] }}</p>
+      <div class="outbox-mail">{{ mail.get_content() }}</div>
+    </section>
+  {% else %}
+    <p class="empty-note">Nothing yet.</p>
+  {% endfor %}
+{% endblock %}

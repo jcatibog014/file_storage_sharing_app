@@ -1,0 +1,40 @@
+{# Small building blocks used by many pages. #}
+
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro field(name, label, value='', error=None, type='text', hint=None, attrs='') %}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label">{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>
+    <input type="{{ type }}" name="{{ name }}" value="{{ value if value is not none else '' }}" {{ attrs|safe }}
+           {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{% macro textarea(name, label, value='', error=None, hint=None, rows=4, attrs='') %}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label">{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>
+    <textarea name="{{ name }}" rows="{{ rows }}" {{ attrs|safe }}
+              {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>{{ value or '' }}</textarea>
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{% macro select(name, label, choices, value=None, error=None, hint=None, attrs='') %}
+  {# choices: a list of (value, text) pairs #}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label">{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>
+    <select name="{{ name }}" {{ attrs|safe }}>
+      {% for choice, text in choices %}
+        <option value="{{ choice }}"{% if choice|string == value|string %} selected{% endif %}>{{ text }}</option>
+      {% endfor %}
+    </select>
+    {% if error %}<p class="field-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{# A coloured letter for a person. The colour comes from the id, so it is the same everywhere. #}
+{% macro avatar(user, size='') %}
+  {% if user %}<span class="avatar tone-{{ user.id % 6 }}{% if size %} avatar-{{ size }}{% endif %}" title="{{ user.name }}" aria-hidden="true">{{ user.initial }}</span>
+  {% else %}<span class="avatar avatar-email{% if size %} avatar-{{ size }}{% endif %}" aria-hidden="true">@</span>{% endif %}
+{% endmacro %}

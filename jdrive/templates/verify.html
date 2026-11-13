@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Check Your Email - {{ APP_NAME }}{% endblock %}
+{% block body_class %}welcome-layout{% endblock %}
+{% block layout_class %}{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block content %}
+  <div class="welcome">
+    {% include "_welcome.html" %}
+    <section class="welcome-cards">
+      <div class="card">
+        <h1>Check Your Email</h1>
+        <p class="lead">We sent a 6-digit code to <strong>{{ person.email }}</strong>. Type it here to finish signing up.</p>
+        {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+        <form method="post" action="{{ url_for('auth.verify') }}" class="stack">
+          {{ csrf() }}
+          <label class="field">
+            <span class="field-label">Code</span>
+            <input type="text" name="code" class="code-input" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="7" required autofocus data-code-input>
+          </label>
+          <button class="button" type="submit">Confirm</button>
+        </form>
+        <div class="resend-row">
+          <span>No email? Check spam.</span>
+          <form method="post" action="{{ url_for('auth.verify') }}">
+            {{ csrf() }}
+            <input type="hidden" name="action" value="resend">
+            <button class="link-button" type="submit" data-wait="{{ wait }}">Send a new code</button>
+          </form>
+        </div>
+        <p class="card-note">Wrong email? <a href="{{ url_for('auth.signup', name=person.name, email=person.email) }}">Sign up again</a></p>
+      </div>
+    </section>
+  </div>
+{% endblock %}

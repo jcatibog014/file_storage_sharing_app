@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_activity.html" import activity_lines with context %}
+{% block title %}Activity - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('auth.settings') }}">{{ icon('back', 16) }} Settings</a>
+  <div class="page-head"><div><h1>Activity</h1>
+    <p class="lead">Everything that happened to your files, and everything you did. Newest first.</p></div></div>
+  <nav class="tabs" aria-label="Show">
+    {% for value, label in FILTERS %}
+      <a href="{{ url_for('activity_views.page', only=value or none) }}"{% if verb == value %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  {% if rows %}
+    <section class="card">{{ activity_lines(rows) }}</section>
+  {% else %}
+    <div class="empty-state">{{ icon('activity', 56) }}<h2>Nothing Yet</h2><p>When you or others upload, share or open your files, it shows here.</p></div>
+  {% endif %}
+{% endblock %}

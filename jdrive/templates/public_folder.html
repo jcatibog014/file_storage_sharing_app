@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_items.html" import type_icon with context %}
+{% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
+{% block body_class %}public-layout{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block public_top %}{% include "_public_top.html" %}{% endblock %}
+{% block content %}
+  {% include "_public_path.html" %}
+  <div class="page-head">
+    <div>
+      <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span></h1>
+      <p class="lead">Shared by {{ item.owner.name }} with a link.{% if not link.allow_download %} Downloads are off.{% endif %}</p>
+    </div>
+    <div class="head-actions">
+      {% block link_actions %}{% endblock %}
+      {% if own_access %}<a class="button button-quiet" href="{{ item_url(item) }}">Open in J: Drive</a>{% endif %}
+      {% if link.allow_download and items %}<a class="button" href="{{ url_for('find.link_zip', token=token, item_id=item.id) }}">{{ icon('zip', 16) }} Download all</a>{% endif %}
+    </div>
+  </div>
+  {% if items %}
+    <div class="file-table-wrap">
+      <table class="file-table">
+        <thead><tr><th scope="col">Name</th><th scope="col" class="col-date">Last Changed</th><th scope="col" class="col-size">Size</th><th scope="col" class="col-menu"><span class="visually-hidden">Download</span></th></tr></thead>
+        <tbody>
+          {% for child in items %}
+            <tr>
+              <td class="col-name"><a class="item-link" href="{{ url_for('public.inside', token=token, item_id=child.id) }}">{{ type_icon(child) }}<span class="item-name">{{ child.name }}</span></a></td>
+              <td class="col-date">{{ child.updated_at|ago }}</td>
+              <td class="col-size">{{ '' if child.is_folder else child.size|filesize }}</td>
+              <td class="col-menu">{% if not child.is_folder and link.allow_download %}<a class="icon-button" href="{{ url_for('public.download', token=token, item_id=child.id) }}" title="Download {{ child.name }}"><span class="visually-hidden">Download {{ child.name }}</span>{{ icon('download') }}</a>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">{{ icon('folder', 56) }}<h2>This Folder Is Empty</h2></div>
+  {% endif %}
+{% endblock %}

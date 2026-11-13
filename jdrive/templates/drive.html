@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}My Drive - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><div><h1>My Drive</h1></div></div>
+  <div class="empty-state">
+    {{ icon('folder', 56) }}
+    <h2>Your Drive Is Ready</h2>
+    <p>Hi {{ g.user.first_name }}! Folders and uploads are on their way.</p>
+  </div>
+{% endblock %}
