@@ -1,4 +1,4 @@
-"""Sending email. J: Drive needs it: sign-up codes, password resets and share
+"""Sending email. JC Drive needs it: sign-up codes, password resets and share
 notices go to people's real inboxes.
 
 Three ways to send, the first that is set up wins:
@@ -26,7 +26,7 @@ from flask import current_app
 
 GMAIL_HOST = "smtp.gmail.com"
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
-FROM_NAME = "J: Drive"
+FROM_NAME = "JC Drive"
 
 
 def way(app=None):

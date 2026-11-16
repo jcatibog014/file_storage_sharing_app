@@ -31,7 +31,7 @@ def test_favicon_has_three_sizes():
 
 def test_the_manifest_lists_existing_icons():
     manifest = json.loads((STATIC / "site.webmanifest").read_text(encoding="utf-8"))
-    assert manifest["name"] == "J: Drive"
+    assert manifest["name"] == "JC Drive"
     for icon in manifest["icons"]:
         assert (STATIC / icon["src"]).exists()
     assert any(icon["purpose"] == "maskable" for icon in manifest["icons"])

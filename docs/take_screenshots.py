@@ -1,7 +1,7 @@
 r"""Take the README screenshots (docs/screenshots/*.png).
 
 Retake them in every pull request that visibly changes a page, and add a new
-one when a page or feature is added: the README shows everything J: Drive
+one when a page or feature is added: the README shows everything JC Drive
 can do. tests/test_readme.py fails if the pictures and the README disagree.
 
 Every picture comes from "Try demo", so only made-up people and drawn sample

@@ -133,7 +133,7 @@ def files():
         "thesis-2": ("Thesis draft.pdf", "application/pdf", pdf("Thesis draft (second)", THESIS_LINES[:4], pages=2)),
         "thesis-3": ("Thesis draft.pdf", "application/pdf", pdf("Thesis draft", THESIS_LINES, pages=3)),
         "resume": ("Resume.pdf", "application/pdf",
-                   pdf("Janelle Demo", ["Web developer (Python, Flask)", "", "Projects", "- J: Drive: file sharing",
+                   pdf("Janelle Demo", ["Web developer (Python, Flask)", "", "Projects", "- JC Drive: file sharing",
                                         "- Ticket Tock: a help desk", "", "Skills", "Python, SQL, HTML, CSS"])),
         "project-plan": ("Project plan.pdf", "application/pdf",
                          pdf("Project plan", ["Week 1: plan", "Week 2: build", "Week 3: test", "Week 4: launch"])),
@@ -151,8 +151,8 @@ def files():
         "notes": ("Research notes.txt", "text/plain",
                   b"Research notes\n\n- Ask Carlo for the survey results\n- Read two more studies on file sharing\n"
                   b"- Signed URLs: links that run out after a short time\n"),
-        "welcome": ("Welcome to J: Drive.txt", "text/plain",
-                    b"Welcome to J: Drive!\n\nThis is a sample drive. Try things:\n- Upload a file (drag it onto a folder)\n"
+        "welcome": ("Welcome to JC Drive.txt", "text/plain",
+                    b"Welcome to JC Drive!\n\nThis is a sample drive. Try things:\n- Upload a file (drag it onto a folder)\n"
                     b"- Open Share on a folder, and turn on its link\n- Look at Photos > Baguio Trip in the grid view\n"
                     b"- Move something to the Trash and restore it\n\nEverything here is deleted after 24 hours.\n"),
         "old-notes": ("Old notes.txt", "text/plain", b"Notes from last year.\n"),
@@ -165,8 +165,11 @@ def files():
 
 
 def key_for(name):
-    """The fixed bucket key of a sample (so every demo finds the same object)."""
-    return "b/" + hashlib.sha256(f"jdrive-sample:{name}:1".encode()).hexdigest()[:32]
+    """The fixed bucket key of a sample (so every demo finds the same object). The
+    content is part of it: a sample whose words change gets a new object, instead of
+    demos finding the old one already in the bucket."""
+    data = files()[name][2]
+    return "b/" + hashlib.sha256(f"jdrive-sample:{name}:".encode() + data).hexdigest()[:32]
 
 
 def blob(s, name):

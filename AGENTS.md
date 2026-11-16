@@ -4,7 +4,7 @@ This file guides AI coding agents (Claude Code, Codex, Cursor, Copilot and other
 
 ## Overview
 
-**J: Drive** ("Your files, on the J side."), a file storage and sharing app in Python (Flask). The name is the J from the owner's name, Janelle, plus a drive letter (like C: or D:). The repo is `file_storage_sharing_app` and the Python package is `jdrive`. People sign up, upload files into folders, download them, and share them with a link or by email as Viewer, Editor or Co-owner. The plan is `docs/PLAN.md`.
+**JC Drive** ("Your files, on the J side."), a file storage and sharing app in Python (Flask). The name is the owner's initials (JC) plus Drive. Until 2026-11-16 it was "JC Drive". The repo is `file_storage_sharing_app` and the Python package is `jdrive`. People sign up, upload files into folders, download them, and share them with a link or by email as Viewer, Editor or Co-owner. The plan is `docs/PLAN.md`.
 
 It is a learning project for **object storage, signed URLs and access security**, so those parts stay easy to read: short comments that explain *why*, login written by hand (no Flask-Login), and no extra libraries unless the owner asks for them. Write the README in simple (A1-level) English.
 

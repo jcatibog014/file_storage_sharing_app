@@ -1,4 +1,4 @@
-# J: Drive: the plan
+# JC Drive: the plan
 
 *"Your files, on the J side."*
 
@@ -6,7 +6,7 @@
 
 Janelle wants a new learning project: an app to upload, organise, download and share files, with access controls, like Google Drive or OneDrive. The skills to practise are **object storage, signed URLs and access security**. What the user chose:
 
-- **Name:** J: Drive (the J from Janelle + a drive letter). Package `jdrive`, local port **5012**, repo `github.com/jcatibog014/file_storage_sharing_app` (made by the user; it already has a `main` branch with a first commit). First step: clone it to a new folder `C:\Users\USER\Documents\Workspace\file_storage_sharing_app`, then branch `build-j-drive`.
+- **Name:** JC Drive (the owner's initials; first called "JC Drive"). Package `jdrive`, local port **5012**, repo `github.com/jcatibog014/file_storage_sharing_app` (made by the user; it already has a `main` branch with a first commit). First step: clone it to a new folder `C:\Users\USER\Documents\Workspace\file_storage_sharing_app`, then branch `build-j-drive`.
 - **Accounts:** open sign-up. The email must be **real**: the account starts only after a 6-digit code sent to that email is entered.
 - **Sharing:** a folder (or file) can be opened by **anyone with the link**, and the owner can also add people by **email as Viewer, Editor or Co-owner**. They get a real email notice.
 - **Storage:** **Backblaze B2** on the live site (S3-compatible, 10 GB free, no card), through `boto3` and presigned URLs. Locally and in tests a built-in **local bucket** works the same way.
@@ -101,7 +101,7 @@ A plain form upload through Flask is the fallback when JavaScript is off. Pendin
 
 ## Stages (one PR, a commit each)
 
-1. **Setup, accounts, look.** App factory, models, migrations 0001, `upgrade-db`, sign up → email code → verified, log in/out, forgot password (emailed code), Settings (name, password, theme, Log out, where every control lives), the Lavender studio theme (tokens on `:root`, dark mode), sidebar (My Drive, Shared with me, Recent, Starred, Trash, Settings), the J: Drive logo + icons, `mailer.py` with Brevo/Gmail/console, CSRF, security headers + CSP.
+1. **Setup, accounts, look.** App factory, models, migrations 0001, `upgrade-db`, sign up → email code → verified, log in/out, forgot password (emailed code), Settings (name, password, theme, Log out, where every control lives), the Lavender studio theme (tokens on `:root`, dark mode), sidebar (My Drive, Shared with me, Recent, Starred, Trash, Settings), the JC Drive logo + icons, `mailer.py` with Brevo/Gmail/console, CSRF, security headers + CSP.
 2. **Folders, files and object storage.** `storage.py` (both buckets), the upload flow above, download redirect, new folder, rename, move (folder picker), breadcrumbs, list/grid view, sort, file-type icons, upload progress + drag & drop, duplicate-name handling. Tests use LocalBucket, and `moto` tests S3Bucket's presigning and HEAD checks.
 3. **Sharing and permissions.** `permissions.py`, the Share dialog (add an email + role; list of people with role changes/removal; "Anyone with the link: Viewer"; Copy link), pending invites + emails, claim on verify, the Shared with me page, the public link page `/s/<token>` (folder browsing + download for visitors), and a big permission test matrix (every role × every action, plus outsiders, links and guessed IDs).
 4. **Safety net.** Trash (restore, empty, auto-delete after 30 days by `/tasks/tick`), file versions (upload a new version, list, download or restore an old one, keep the last 10), blobs swept from the bucket once nothing points at them (a reference check, safer than a counter when a whole account cascades away), a storage quota (1 GB per account; demo smaller) with a usage bar in the sidebar.

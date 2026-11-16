@@ -23,7 +23,7 @@ from sqlalchemy import delete, select
 from . import limits
 from .models import RecoveryCode
 
-ISSUER = "J: Drive"
+ISSUER = "JC Drive"
 RECOVERY_COUNT = 8
 RECOVERY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I/L
 TRIES = 5

@@ -33,7 +33,7 @@ def test_the_demo_starts_with_a_welcome(app):
     client = start_demo(app)
     page = text(client.get("/drive"))
     assert "You are Janelle Demo" in page and "Demo" in page
-    for name in ("Photos", "School", "Work", "Resume.pdf", "Voice memo.wav", "Welcome to J: Drive.txt"):
+    for name in ("Photos", "School", "Work", "Resume.pdf", "Voice memo.wav", "Welcome to JC Drive.txt"):
         assert name in page, name
 
 
@@ -51,7 +51,7 @@ def test_every_page_has_an_example(app):
         f"/items/{item_id(app, 'Work')}/share": "hasn't signed up yet",
         f"/items/{item_id(app, 'Homework Box')}/share": "can add files",
         "/shared": "Family Recipes",
-        "/recent": "Welcome to J: Drive.txt",
+        "/recent": "Welcome to JC Drive.txt",
         "/starred": "Resume.pdf",
         "/trash": "Old notes.txt",
         "/notifications": "shared Family Recipes with you",
@@ -151,3 +151,12 @@ def test_links_to_many_rows_have_an_index():
                 missing.append(f"{table.name}.{fk.parent.name}")
     assert missing == []
 
+
+
+def test_a_sample_with_new_words_gets_a_new_object(monkeypatch):
+    from jdrive import samples
+    before = samples.key_for("welcome")
+    changed = dict(samples.files())
+    changed["welcome"] = ("Welcome to JC Drive.txt", "text/plain", b"different words")
+    monkeypatch.setattr(samples, "files", lambda: changed)
+    assert samples.key_for("welcome") != before

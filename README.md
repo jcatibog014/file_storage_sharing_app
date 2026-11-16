@@ -1,11 +1,11 @@
-# J: Drive
+# JC Drive
 
 *Your files, on the J side.*
 
-J: Drive is a place to keep your files. You upload them, put them in folders, and download them again.
+JC Drive is a place to keep your files. You upload them, put them in folders, and download them again.
 You can share a folder with a link, or add people by email. You decide what each person can do.
 
-The name: **J** is for Janelle, and **J:** looks like a drive on a computer (like C: or D:).
+The name: **JC** is the owner's initials, and **Drive** is where your files live.
 
 ![The login page](docs/screenshots/login.png)
 
@@ -21,8 +21,8 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 ### Your Account
 
 - **Sign up** with your name, email and a password.
-- J: Drive **emails you a 6-digit code**. Your account works only after you type it in, so the email must be real.
-- Forgot your password? J: Drive emails you a code to make a new one.
+- JC Drive **emails you a 6-digit code**. Your account works only after you type it in, so the email must be real.
+- Forgot your password? JC Drive emails you a code to make a new one.
 
 ![Check your email](docs/screenshots/check-email.png)
 
@@ -113,7 +113,7 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 
 ### Dark Mode and Phones
 
-Choose Light, Dark or your device's setting in **Settings**. J: Drive works on phones, and you can install it like an app.
+Choose Light, Dark or your device's setting in **Settings**. JC Drive works on phones, and you can install it like an app.
 
 ![Dark mode grid](docs/screenshots/dark-grid.png)
 
@@ -128,14 +128,14 @@ Choose Light, Dark or your device's setting in **Settings**. J: Drive works on p
 These are the main ideas this project practises:
 
 - **Object storage.** The files are not in the database. They are "objects" in a **private bucket** (Backblaze B2), each under a random name like `b/3f2a…`. The database only knows the file's name, folder and owner.
-- **Signed links.** Nobody can open the bucket directly. When you upload or download, J: Drive gives your browser a **signed link** for that one file. It works for a short time only (10 minutes to upload, 60 seconds to download). If anyone changes the link, it stops working.
-- **Uploads go straight to the bucket.** Your browser sends the file to B2, not through the website. Then J: Drive checks that the file arrived with the right size before it shows it.
+- **Signed links.** Nobody can open the bucket directly. When you upload or download, JC Drive gives your browser a **signed link** for that one file. It works for a short time only (10 minutes to upload, 60 seconds to download). If anyone changes the link, it stops working.
+- **Uploads go straight to the bucket.** Your browser sends the file to B2, not through the website. Then JC Drive checks that the file arrived with the right size before it shows it.
 - **One check for everything.** Every page asks "what is this person's role here?" first. If you have no role, you get "Not Found", so you can't even tell that a file exists.
 - **Secrets are never stored as they are.** Passwords, email codes, link secrets and recovery codes are kept only as hashes.
 
 ## Tools
 
-| Tool | What it is | What J: Drive uses it for |
+| Tool | What it is | What JC Drive uses it for |
 |---|---|---|
 | Python 3.13 | a programming language | all the code on the server |
 | Flask | a small web framework | the pages and the forms |

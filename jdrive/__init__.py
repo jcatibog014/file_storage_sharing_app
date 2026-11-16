@@ -1,4 +1,4 @@
-"""J: Drive, a place to upload, organise, download and share files.
+"""JC Drive, a place to upload, organise, download and share files.
 "Your files, on the J side."
 
 Flask builds the app inside create_app() (the "app factory" pattern).
@@ -13,10 +13,10 @@ from flask import Flask, g, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Python doesn't know this one, and browsers want the right type for the app manifest
-# (the name and icons used when someone adds J: Drive to a home screen).
+# (the name and icons used when someone adds JC Drive to a home screen).
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 
-APP_NAME = "J: Drive"
+APP_NAME = "JC Drive"
 TAGLINE = "Your files, on the J side."
 DEV_SECRET_KEY = "dev-only-not-secret"
 

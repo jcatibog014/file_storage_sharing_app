@@ -158,10 +158,10 @@ def log_in(user, moment=None):
     session_id, secret = devices.start(s, user, device, limits.client_ip(), moment)
     s.commit()
     if new_device:
-        mailer.send(user.email, "New login to your J: Drive",
-                    f"Hi {user.first_name},\n\nSomeone just logged in to your J: Drive from {device}. "
+        mailer.send(user.email, "New login to your JC Drive",
+                    f"Hi {user.first_name},\n\nSomeone just logged in to your JC Drive from {device}. "
                     f"If that was you, all is well.\n\nIf it wasn't, change your password now and choose "
-                    f"\"Log out other devices\" in Settings: {url_for('auth.settings', _external=True)}\n\nJ: Drive")
+                    f"\"Log out other devices\" in Settings: {url_for('auth.settings', _external=True)}\n\nJC Drive")
     csrf = session.get("csrf")
     session.clear()  # a new session for the new user (old cookies can't be reused)
     if csrf and user.is_demo:
@@ -371,7 +371,7 @@ def verify():
             next_page = session.pop("verify_next", "")
             session.pop("verify_id", None)
             log_in(user)
-            flash(f"Welcome to J: Drive, {user.first_name}! Your email is confirmed.")
+            flash(f"Welcome to JC Drive, {user.first_name}! Your email is confirmed.")
             return redirect(safe_next(next_page))
         error = codes.problem_after_wrong(s, user, codes.VERIFY, moment)
         s.commit()
