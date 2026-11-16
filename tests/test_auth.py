@@ -18,7 +18,7 @@ def test_sign_up_sends_a_code_and_the_account_waits_for_it(client, app):
     page = text(client.get("/verify"))
     assert "maria@example.com" in page and "6-digit code" in page
     email = mailer.last_to("maria@example.com", app)
-    assert "J: Drive" in email["Subject"]
+    assert "JC Drive" in email["Subject"]
     # Only a hash of the code is kept.
     code = code_sent_to(app, "maria@example.com")
     with app.app_context():
@@ -220,7 +220,7 @@ def test_security_headers(client, app):
 
 def test_the_outbox_page_is_only_for_local_use(client, app):
     sign_up(client, verify=False)
-    assert "Your J: Drive code" in text(client.get("/dev/outbox"))
+    assert "Your JC Drive code" in text(client.get("/dev/outbox"))
     app.config["ON_RENDER"] = True
     assert client.get("/dev/outbox").status_code == 404
 

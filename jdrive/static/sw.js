@@ -1,4 +1,4 @@
-// J: Drive's service worker. It makes the app installable on a phone and keeps
+// JC Drive's service worker. It makes the app installable on a phone and keeps
 // the look (styles, scripts, icons) ready even on a slow connection.
 // Pages always come from the network, so files are never out of date;
 // without a connection a small "You're offline" page shows instead.

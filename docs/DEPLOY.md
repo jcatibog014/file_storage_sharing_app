@@ -1,8 +1,8 @@
-# Put J: Drive on the Internet
+# Put JC Drive on the Internet
 
-J: Drive uses four free services:
+JC Drive uses four free services:
 
-| Service | What it does for J: Drive |
+| Service | What it does for JC Drive |
 |---|---|
 | **Render** | runs the website |
 | **Neon** | keeps the database (accounts, folders, shares) |
@@ -26,7 +26,7 @@ Do the steps in this order. It takes about 40 minutes. Run each command on its o
 1. Sign up at https://www.backblaze.com/sign-up/cloud-storage (free for 10 GB; no card needed).
 2. Open **Buckets**, then **Create a Bucket**:
    - Name: something only yours, like `j-drive-janelle-files` (names are shared by everyone on B2).
-   - Files in Bucket: **Private**. (J: Drive gives out signed links itself. Never make it public.)
+   - Files in Bucket: **Private**. (JC Drive gives out signed links itself. Never make it public.)
    - Default Encryption: **Enable** (B2 encrypts the files on its disks).
    - Object Lock: **Disable**.
 3. On the new bucket's card, copy the **Endpoint**, like `s3.us-west-004.backblazeb2.com`.

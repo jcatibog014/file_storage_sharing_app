@@ -28,16 +28,16 @@ RESEND_WAIT = timedelta(seconds=60)
 SENDS_PER_HOUR = 5
 
 SUBJECTS = {
-    VERIFY: "Your J: Drive code: {code}",
-    RESET: "Reset your J: Drive password: {code}",
+    VERIFY: "Your JC Drive code: {code}",
+    RESET: "Reset your JC Drive password: {code}",
 }
 BODIES = {
-    VERIFY: ("Hi {name},\n\nYour code to finish signing up for J: Drive is:\n\n    {code}\n\n"
+    VERIFY: ("Hi {name},\n\nYour code to finish signing up for JC Drive is:\n\n    {code}\n\n"
              "It works for 15 minutes. If you didn't sign up, you can ignore this email: "
-             "nothing happens without the code.\n\nJ: Drive"),
-    RESET: ("Hi {name},\n\nYour code to set a new J: Drive password is:\n\n    {code}\n\n"
+             "nothing happens without the code.\n\nJC Drive"),
+    RESET: ("Hi {name},\n\nYour code to set a new JC Drive password is:\n\n    {code}\n\n"
             "It works for 15 minutes. If you didn't ask for it, ignore this email: "
-            "your password stays the same.\n\nJ: Drive"),
+            "your password stays the same.\n\nJC Drive"),
 }
 
 

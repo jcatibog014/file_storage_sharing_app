@@ -148,7 +148,7 @@ def test_a_new_device_gets_an_email(app):
     post(app.test_client(), "/login", {"email": "maria@example.com", "password": PASSWORD},
          headers={"User-Agent": "Mozilla/5.0 (Android 14) Chrome/130"})
     email = mailer.last_to("maria@example.com", app)
-    assert email["Subject"] == "New login to your J: Drive" and "Chrome on Android" in email.get_content()
+    assert email["Subject"] == "New login to your JC Drive" and "Chrome on Android" in email.get_content()
 
 
 def test_old_ended_logins_are_forgotten(app, ctx):

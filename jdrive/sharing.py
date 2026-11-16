@@ -125,12 +125,12 @@ def _send_invite(actor, item, share, person, note):
     note_line = f'\n{actor.first_name} wrote: "{note.strip()[:500]}"\n' if note and note.strip() else ""
     if person is not None:
         body = (f"Hi {person.first_name},\n\n{actor.name} ({actor.email}) shared the {kind} \"{item.name}\" "
-                f"with you on J: Drive. You are {role}.\n{note_line}\nOpen it: {item_link(item)}\n\nJ: Drive")
+                f"with you on JC Drive. You are {role}.\n{note_line}\nOpen it: {item_link(item)}\n\nJC Drive")
     else:
         signup = url_for("auth.signup", email=share.email, next=item_link(item, external=False), _external=True)
-        body = (f"Hi,\n\n{actor.name} ({actor.email}) shared the {kind} \"{item.name}\" with you on J: Drive. "
+        body = (f"Hi,\n\n{actor.name} ({actor.email}) shared the {kind} \"{item.name}\" with you on JC Drive. "
                 f"You are {role}.\n{note_line}\nTo open it, sign up with this email address ({share.email}). "
-                f"We'll send you a code to check it's yours, then the {kind} is waiting for you:\n{signup}\n\nJ: Drive")
+                f"We'll send you a code to check it's yours, then the {kind} is waiting for you:\n{signup}\n\nJC Drive")
     mailer.send(share.email, f"{actor.name} shared \"{item.name}\" with you", body)
 
 

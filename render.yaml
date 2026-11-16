@@ -1,4 +1,4 @@
-# Render "Blueprint": tells Render how to build and run J: Drive.
+# Render "Blueprint": tells Render how to build and run JC Drive.
 # Render reads this file when you choose New -> Blueprint and pick this repo.
 # The service name becomes the web address: j-drive.onrender.com
 # (Render adds a few letters if that name is already taken).
