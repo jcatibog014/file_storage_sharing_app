@@ -119,9 +119,9 @@ Choose Light, Dark or your device's setting in **Settings**. JC Drive works on p
 
 ![Dark mode Share page](docs/screenshots/dark-share.png)
 
-| My Drive on a phone | A picture on a phone |
-|---|---|
-| ![My Drive on a phone](docs/screenshots/phone-drive.png) | ![A picture on a phone](docs/screenshots/phone-picture.png) |
+| My Drive on a phone | A picture on a phone | Shared With Me on a phone |
+|---|---|---|
+| ![My Drive on a phone](docs/screenshots/phone-drive.png) | ![A picture on a phone](docs/screenshots/phone-picture.png) | ![Shared With Me on a phone](docs/screenshots/phone-shared.png) |
 
 ## How It Keeps Files Safe
 

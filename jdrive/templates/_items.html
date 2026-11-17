@@ -89,6 +89,14 @@
   </ul>
 {% endmacro %}
 
+{# One button that switches between list and grid: it shows the view you'd switch TO.
+   params: other things to keep in the address (sort, order). #}
+{% macro view_toggle(view, params={}) %}
+  {% set other = 'grid' if view == 'list' else 'list' %}
+  <a class="icon-button view-toggle" href="?{{ dict(params, view=other)|urlencode }}" title="Show as {{ other }}">
+    <span class="visually-hidden">Show as {{ other }}</span>{{ icon(other) }}</a>
+{% endmacro %}
+
 {# My Drive > Photos > 2026: the way back up. #}
 {% macro breadcrumbs(path, last_is_link=False, top_label='My Drive', top_url=None) %}
   <nav class="breadcrumbs" aria-label="Folder path">

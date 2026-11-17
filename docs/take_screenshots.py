@@ -56,11 +56,18 @@ PAGES = [
     ("dark-share.png", "Photos > Baguio Trip!share", "dark", DESKTOP),
     ("phone-drive.png", "/drive?view=list", "light", PHONE),
     ("phone-picture.png", "Photos > Baguio Trip > Burnham Park.jpg", "light", PHONE),
+    ("phone-shared.png", "/shared?view=list", "light", PHONE),
 ]
 
 
+def new_page(browser, size, theme):
+    """A phone-sized page is a touch screen too, so pages show their phone wording ("Tap to upload")."""
+    phone = size["width"] < 600
+    return browser.new_page(viewport=size, color_scheme=theme, has_touch=phone, is_mobile=phone)
+
+
 def start_demo(browser, theme, size):
-    page = browser.new_page(viewport=size, color_scheme=theme)
+    page = new_page(browser, size, theme)
     page.goto(f"{BASE}/login")
     page.get_by_role("button", name="Try the demo").click()
     page.wait_for_url(f"{BASE}/drive")
@@ -85,7 +92,7 @@ def go(page, browser, where, theme, size):
         view, where = f"?view={view}", where + (f"#{anchor}" if anchor else "")
     where, _, anchor = where.partition("#")
     if where == "signup":
-        visitor = browser.new_page(viewport=size, color_scheme=theme)
+        visitor = new_page(browser, size, theme)
         visitor.goto(f"{BASE}/signup")
         visitor.fill("input[name=name]", "Maria Santos")
         visitor.fill("input[name=email]", "maria.santos@example.com")
@@ -106,7 +113,7 @@ def go(page, browser, where, theme, size):
                   wait_until="networkidle")
     if visitor_view:
         link = page.locator("#share-link").input_value()
-        visitor = browser.new_page(viewport=size, color_scheme=theme)
+        visitor = new_page(browser, size, theme)
         visitor.goto(link, wait_until="networkidle")
         return visitor
     if view:
@@ -130,7 +137,7 @@ def main():
         for name, where, theme, size in PAGES:
             key = (theme, size["width"])
             if name == "login.png":
-                shot = browser.new_page(viewport=size, color_scheme=theme)
+                shot = new_page(browser, size, theme)
                 shot.goto(f"{BASE}/login")
             elif name == "demo-start.png":
                 shot = pages[key] = start_demo(browser, theme, size)  # the welcome toast is still showing

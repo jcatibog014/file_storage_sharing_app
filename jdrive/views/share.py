@@ -158,7 +158,8 @@ def leave(item_id):
 def shared_with_me():
     s = db.session()
     rows = sharing.shared_with_me(s, g.user)
-    return render_template("shared.html", rows=rows, menu_here="shared")
+    from .drive import view_mode
+    return render_template("shared.html", rows=rows, menu_here="shared", view=view_mode())
 
 
 def init_app(app):

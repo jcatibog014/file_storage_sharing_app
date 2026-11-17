@@ -9,9 +9,15 @@
 <aside class="sidebar">
   <div class="sidebar-top">
     <a class="logo" href="{{ url_for('drive.home') }}">{{ logo() }} {{ APP_NAME }}</a>
-    {% if g.user.is_demo %}<span class="demo-tag">Demo</span>{% endif %}
-    <button class="menu-button" type="button" data-menu-button aria-expanded="false" aria-controls="side-nav" hidden>
-      <span aria-hidden="true">&#9776;</span> Menu
+    {% if g.user.is_demo %}
+      <details class="demo-info" data-popover>
+        <summary class="demo-tag" title="You are in a demo workspace">Demo</summary>
+        <div class="demo-pop">You are in a demo workspace. Everything here is deleted after 24 hours.
+          <a href="{{ url_for('auth.signup') }}">Sign up for real</a></div>
+      </details>
+    {% endif %}
+    <button class="menu-button" type="button" data-menu-button aria-expanded="false" aria-controls="side-nav" aria-label="Menu" hidden>
+      {{ icon('menu', 22) }}
     </button>
   </div>
   <div class="sidebar-menu" id="side-nav">
