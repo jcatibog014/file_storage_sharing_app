@@ -93,7 +93,7 @@
 {% macro breadcrumbs(path, last_is_link=False, top_label='My Drive', top_url=None) %}
   <nav class="breadcrumbs" aria-label="Folder path">
     <ol>
-      <li><a href="{{ top_url or url_for('drive.home') }}">{{ top_label }}</a></li>
+      <li><a class="crumb-home" href="{{ top_url or url_for('drive.home') }}">{{ icon('home' if top_label == 'My Drive' else 'people', 15) }} {{ top_label }}</a></li>
       {% for crumb in path %}
         {% if loop.last and not last_is_link %}<li aria-current="page">{{ crumb.name }}</li>
         {% else %}<li><a href="{{ item_url(crumb) }}">{{ crumb.name }}</a></li>{% endif %}
@@ -122,7 +122,9 @@
             <td class="col-name"><a class="item-link" href="{{ item_url(item) }}">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span></a></td>
             <td class="col-where">
               {# Only owners see the folder name: for anyone else it could be a folder above what was shared with them. #}
-              {% if item.owner_id == g.user.id %}{{ access.path[-2].name if access.path|length > 1 else 'My Drive' }}
+              {% if item.owner_id == g.user.id %}
+                {% if access.path|length > 1 %}<a class="where-link" href="{{ item_url(access.path[-2]) }}">{{ access.path[-2].name }}</a>
+                {% else %}<a class="where-link" href="{{ url_for('drive.home') }}">My Drive</a>{% endif %}
               {% else %}Shared by {{ item.owner.first_name }}{% endif %}
             </td>
             {% set moment = when[loop.index0] if when else item.updated_at %}

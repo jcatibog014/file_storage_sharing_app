@@ -44,6 +44,15 @@ NEEDS = {
 }
 
 
+# One line about each role, for tooltips.
+ROLE_HELP = {
+    VIEWER: "Viewer: can open and download, but not change anything",
+    EDITOR: "Editor: can also upload, rename, move and remove files",
+    COOWNER: "Co-owner: can also share it and choose who has access",
+    OWNER: "Owner: can do everything, including deleting for good",
+}
+
+
 def a_role(role):
     """"a Viewer", "an Editor", "a Co-owner", "an Owner"."""
     name = ROLE_NAMES[role]
@@ -133,4 +142,4 @@ def require(s, user, item_id, action="view", kind=None, allow_trashed=False):
 
 
 def init_app(app):
-    app.jinja_env.globals.update(ROLE_NAMES=ROLE_NAMES, role_allows=allows)
+    app.jinja_env.globals.update(ROLE_NAMES=ROLE_NAMES, ROLE_HELP=ROLE_HELP, role_allows=allows)

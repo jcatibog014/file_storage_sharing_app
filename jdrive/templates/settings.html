@@ -63,7 +63,7 @@
 
     <section class="setting">
       <div class="setting-text">
-        <h2>Two-Step Sign-In</h2>
+        <h2>Two-Step Sign-In (2FA)</h2>
         <p>{% if twostep_on %}On. Logging in also needs a code from your phone. {{ plural(codes_left, 'recovery code') }} left.
            {% else %}Off. Turn it on so a stolen password isn't enough to get in.{% endif %}</p>
       </div>
@@ -90,8 +90,8 @@
         </div>
       {% else %}
         <div class="form-actions">
-          {% if g.user.is_demo %}<button class="button" type="button" disabled>{{ icon('shield', 16) }} Turn on</button>
-          {% else %}<a class="button" href="{{ url_for('auth.twostep_setup') }}">{{ icon('shield', 16) }} Turn on</a>{% endif %}
+          {% if g.user.is_demo %}<button class="button" type="button" disabled>{{ icon('shield', 16) }} Enable 2FA</button>
+          {% else %}<a class="button" href="{{ url_for('auth.twostep_setup') }}">{{ icon('shield', 16) }} Enable 2FA</a>{% endif %}
         </div>
       {% endif %}
     </section>
@@ -120,7 +120,7 @@
         {% if sessions|length > 1 %}
           <form method="post" class="form-actions">
             {{ csrf() }}<input type="hidden" name="action" value="logout_others">
-            <button class="button button-quiet" type="submit"{% if g.user.is_demo %} disabled{% endif %}>Log out other devices</button>
+            <button class="button button-quiet" type="submit"{% if g.user.is_demo %} disabled{% endif %}>Log out all other devices</button>
           </form>
         {% endif %}
       </div>
@@ -131,7 +131,7 @@
         <h2>Activity</h2>
         <p>Everything that happened to your files, and everything you did.</p>
       </div>
-      <div class="form-actions"><a class="button button-quiet" href="{{ url_for('activity_views.page') }}">{{ icon('activity', 16) }} Open activity</a></div>
+      <div class="form-actions"><a class="button button-quiet" href="{{ url_for('activity_views.page') }}">{{ icon('activity', 16) }} View activity log</a></div>
     </section>
 
     <section class="setting">

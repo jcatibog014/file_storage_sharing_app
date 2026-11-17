@@ -23,7 +23,7 @@
             <tr>
               <td class="col-name"><a class="item-link" href="{{ item_url(item) }}">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span></a></td>
               <td class="col-owner"><span class="person-inline">{{ avatar(share.invited_by or item.owner, 'small') }} {{ (share.invited_by or item.owner).name }}</span></td>
-              <td class="col-role">{{ ROLE_NAMES[share.role] }}</td>
+              <td class="col-role"><span class="role-name" title="{{ ROLE_HELP[share.role] }}">{{ ROLE_NAMES[share.role] }}</span></td>
               <td class="col-date" title="{{ share.created_at|nice_datetime }}">{{ share.created_at|ago }}</td>
               <td class="col-menu">
                 <details class="item-menu" data-popover>

@@ -31,7 +31,7 @@
       </ul>
       {# How much space the files take: every version and the Trash count. #}
       {% set used, limit, percent = storage_usage(g.user) %}
-      <div class="space{% if percent >= 90 %} is-full{% endif %}">
+      <div class="space{% if percent >= 90 %} is-full{% elif percent >= 75 %} is-warning{% endif %}">
         <div class="space-bar" role="progressbar" aria-label="Storage used" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
           <span class="space-fill w-{{ (percent // 5) * 5 }}"></span>
         </div>
@@ -39,7 +39,7 @@
       </div>
     </nav>
     <div class="sidebar-foot">
-      {% if g.user.is_demo %}<a class="demo-signup" href="{{ url_for('auth.signup') }}">Sign up for real</a>{% endif %}
+      {% if g.user.is_demo %}<a class="demo-signup" href="{{ url_for('auth.signup') }}">{{ icon('person', 16) }} Sign up for real</a>{% endif %}
       {# <details> opens and closes without JavaScript. app.js also closes it on an outside click. #}
       <details class="user-menu" data-popover>
         <summary>
@@ -48,6 +48,16 @@
             <small>{{ 'Demo account' if g.user.is_demo else g.user.email }}</small></span>
         </summary>
         <div class="user-menu-items">
+          {# The theme needs JavaScript (it lives in the browser); app.js shows it. #}
+          <div class="menu-theme" data-theme-settings hidden>
+            <p>Theme</p>
+            <fieldset class="theme-choice">
+              <legend class="visually-hidden">Theme</legend>
+              <label><input type="radio" name="menu-theme" value="system"><span>Device</span></label>
+              <label><input type="radio" name="menu-theme" value="light"><span>Light</span></label>
+              <label><input type="radio" name="menu-theme" value="dark"><span>Dark</span></label>
+            </fieldset>
+          </div>
           <a href="{{ url_for('auth.settings') }}">Settings</a>
           <form method="post" action="{{ url_for('auth.logout') }}">
             {{ csrf() }}
