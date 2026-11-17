@@ -21,7 +21,7 @@
       {% if access and access.can('share') %}
         <a class="button button-quiet" href="{{ url_for('share.page', item_id=folder.id) }}">{{ icon('share', 16) }} Share{% if people %} <span class="button-count">{{ people }}</span>{% endif %}</a>
       {% elif access %}
-        <span class="badge badge-accent role-badge">{{ access.role_name }}</span>
+        <span class="badge badge-accent role-badge" title="{{ ROLE_HELP[access.role] }}">{{ access.role_name }}</span>
       {% endif %}
       {% if can_add %}
         <details class="new-panel" data-popover>
@@ -42,7 +42,7 @@
           <input type="hidden" name="parent_id" value="{{ folder.id if folder else '' }}">
           <label class="button upload-button">
             {{ icon('upload', 16) }} Upload
-            <input class="upload-input" type="file" name="files" multiple data-upload-input>
+            <input class="upload-input" id="upload-input" type="file" name="files" multiple data-upload-input>
           </label>
           <button class="button no-js-only" type="submit">Send files</button>
         </form>
@@ -79,6 +79,10 @@
         <h2>{{ 'Nothing Here Yet' if folder else 'Your Drive Is Empty' }}</h2>
         <p>{% if can_add %}Drop files here, or press Upload.{% else %}When files are added, they show here.{% endif %}</p>
       </div>
+    {% endif %}
+    {% if can_add and items %}
+      <div class="drop-more js-only">{{ icon('upload', 22) }}
+        <span>Drag and drop files here to upload, or <label for="upload-input">choose files</label></span></div>
     {% endif %}
     {% if can_add %}<div class="drop-hint" aria-hidden="true">{{ icon('upload', 40) }} Drop to upload</div>{% endif %}
   </div>

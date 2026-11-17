@@ -1,13 +1,21 @@
 // Extras only: every page works without this file.
 
 // The Appearance choice on the Settings page. theme.js applies it on every page.
+// The theme choice is in Settings and in the account menu; both stay in step.
 function setUpTheme() {
-  const section = document.querySelector("[data-theme-settings]");
-  if (!section) return;
+  const sections = document.querySelectorAll("[data-theme-settings]");
+  if (!sections.length) return;
   const root = document.documentElement;
-  section.hidden = false;
-  section.querySelectorAll('input[name="theme"]').forEach((choice) => {
+  const choices = [];
+  sections.forEach((section) => {
+    section.hidden = false;
+    choices.push(...section.querySelectorAll('input[type="radio"]'));
+  });
+  const showCurrent = () => choices.forEach((choice) => {
     choice.checked = choice.value === (root.dataset.theme || "system");
+  });
+  showCurrent();
+  choices.forEach((choice) => {
     choice.addEventListener("change", () => {
       try {
         if (choice.value === "system") {
@@ -20,6 +28,7 @@ function setUpTheme() {
       } catch (error) {
         // Storage can be blocked. The theme still changes for this page.
       }
+      showCurrent();
     });
   });
 }
@@ -57,16 +66,74 @@ function setUpPopovers() {
   });
 }
 
+// "Are you sure?" in our own dialog (a <dialog>: Escape and the Cancel button close it).
+// Without JavaScript the form simply goes, as before.
+function askFirst(message, okLabel) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "confirm-dialog";
+    const title = document.createElement("h2");
+    title.textContent = "Are You Sure?";
+    const text = document.createElement("p");
+    text.textContent = message; // text, never HTML
+    const actions = document.createElement("div");
+    actions.className = "form-actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "button button-quiet";
+    cancel.textContent = "Cancel";
+    const ok = document.createElement("button");
+    ok.type = "button";
+    ok.className = "button button-danger-solid";
+    ok.textContent = okLabel || "Yes, go ahead";
+    actions.append(cancel, ok);
+    dialog.append(title, text, actions);
+    document.body.append(dialog);
+    const finish = (answer) => {
+      dialog.close();
+      dialog.remove();
+      resolve(answer);
+    };
+    cancel.addEventListener("click", () => finish(false));
+    ok.addEventListener("click", () => finish(true));
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      finish(false);
+    });
+    dialog.showModal();
+    cancel.focus(); // the safe choice is the one ready to press
+  });
+}
+
 function setUpConfirm() {
   document.querySelectorAll("form[data-confirm]").forEach((form) => {
     form.addEventListener("submit", (event) => {
-      if (!confirm(form.dataset.confirm)) event.preventDefault();
+      if (form.dataset.confirmed) {
+        delete form.dataset.confirmed;
+        return;
+      }
+      event.preventDefault();
+      const submitter = event.submitter;
+      askFirst(form.dataset.confirm, form.dataset.confirmOk).then((yes) => {
+        if (!yes) return;
+        form.dataset.confirmed = "1";
+        form.requestSubmit(submitter);
+      });
     });
   });
-  // One button of a form that needs asking first (Delete, beside Save).
+  // One button of a form that needs asking first (Make a new link, beside other buttons).
   document.querySelectorAll("button[data-confirm-button]").forEach((button) => {
     button.addEventListener("click", (event) => {
-      if (!confirm(button.dataset.confirmButton)) event.preventDefault();
+      if (button.dataset.confirmed) {
+        delete button.dataset.confirmed;
+        return;
+      }
+      event.preventDefault();
+      askFirst(button.dataset.confirmButton, button.dataset.confirmOk).then((yes) => {
+        if (!yes) return;
+        button.dataset.confirmed = "1";
+        button.click();
+      });
     });
   });
 }

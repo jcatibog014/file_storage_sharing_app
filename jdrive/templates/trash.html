@@ -9,9 +9,9 @@
       <p class="lead">Things here are deleted for good after {{ TRASH_DAYS }} days. They still take space until then.</p></div>
     {% if has_own %}
       <div class="head-actions">
-        <form method="post" action="{{ url_for('drive.empty_trash') }}" data-confirm="Delete everything you own in the Trash for good? This can't be undone.">
+        <form method="post" action="{{ url_for('drive.empty_trash') }}" data-confirm="Delete everything you own in the Trash for good? This can't be undone." data-confirm-ok="Delete all for good">
           {{ csrf() }}
-          <button class="button button-danger" type="submit">{{ icon('trash', 16) }} Empty trash</button>
+          <button class="button button-danger" type="submit">Delete all for good</button>
         </form>
       </div>
     {% endif %}
@@ -23,7 +23,7 @@
           <tr>
             <th scope="col">Name</th>
             <th scope="col" class="col-where">Owner</th>
-            <th scope="col" class="col-left">Deleted In</th>
+            <th scope="col" class="col-left">Auto-Deletes In</th>
             <th scope="col" class="col-actions"><span class="visually-hidden">Actions</span></th>
           </tr>
         </thead>
@@ -33,17 +33,18 @@
               <td class="col-name"><span class="item-link is-plain">{{ type_icon(item) }}<span class="item-name">{{ item.name }}</span></span></td>
               <td class="col-where">{{ 'me' if item.owner_id == g.user.id else item.owner.name }}</td>
               <td class="col-left">{{ 'today' if days_left == 0 else plural(days_left, 'day') }}</td>
-              <td class="col-actions">
+              <td class="col-actions"><div class="trash-actions">
                 <form method="post" action="{{ url_for('drive.restore', item_id=item.id) }}">
                   {{ csrf() }}<button class="button button-quiet button-small" type="submit">{{ icon('restore', 14) }} Restore</button>
                 </form>
                 {% if item.owner_id == g.user.id %}
                   <form method="post" action="{{ url_for('drive.delete', item_id=item.id) }}"
-                        data-confirm="Delete {{ item.name }}{{ ' and everything in it' if item.is_folder }} for good? This can't be undone.">
-                    {{ csrf() }}<button class="icon-button" type="submit" title="Delete {{ item.name }} for good"><span class="visually-hidden">Delete {{ item.name }} for good</span>{{ icon('x', 16) }}</button>
+                        data-confirm="Delete {{ item.name }}{{ ' and everything in it' if item.is_folder }} for good? This can't be undone."
+                        data-confirm-ok="Delete for good">
+                    {{ csrf() }}<button class="link-button danger" type="submit">Delete for good<span class="visually-hidden"> {{ item.name }}</span></button>
                   </form>
                 {% endif %}
-              </td>
+              </div></td>
             </tr>
           {% endfor %}
         </tbody>

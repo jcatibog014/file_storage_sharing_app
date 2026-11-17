@@ -62,7 +62,7 @@ PAGES = [
 def start_demo(browser, theme, size):
     page = browser.new_page(viewport=size, color_scheme=theme)
     page.goto(f"{BASE}/login")
-    page.get_by_role("button", name="Try demo").click()
+    page.get_by_role("button", name="Try the demo").click()
     page.wait_for_url(f"{BASE}/drive")
     return page
 

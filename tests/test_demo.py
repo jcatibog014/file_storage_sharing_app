@@ -26,7 +26,7 @@ def item_id(app, name):
 
 
 def test_the_login_page_offers_the_demo(client):
-    assert "Try demo" in text(client.get("/login"))
+    assert "Explore the Demo" in text(client.get("/login")) and "Try the demo" in text(client.get("/login"))
 
 
 def test_the_demo_starts_with_a_welcome(app):
