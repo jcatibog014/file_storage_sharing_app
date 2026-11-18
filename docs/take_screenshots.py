@@ -46,9 +46,11 @@ PAGES = [
     ("visitor-folder.png", "Photos > Baguio Trip@", "light", DESKTOP),
     ("visitor-upload.png", "School > Homework Box@", "light", DESKTOP),
     ("search.png", "/search?q=a", "light", DESKTOP),
-    ("recent.png", "/recent", "light", DESKTOP),
-    ("starred.png", "/starred", "light", DESKTOP),
-    ("trash.png", "/trash", "light", DESKTOP),
+    ("recent.png", "/recent?view=list", "light", DESKTOP),
+    ("recent-grid.png", "/recent?view=grid", "light", DESKTOP),
+    ("starred.png", "/starred?view=list", "light", DESKTOP),
+    ("trash.png", "/trash?view=list", "light", DESKTOP),
+    ("trash-grid.png", "/trash?view=grid", "light", DESKTOP),
     ("notifications.png", "/notifications", "light", DESKTOP),
     ("activity.png", "/activity", "light", DESKTOP),
     ("settings.png", "/settings#security", "light", DESKTOP),
@@ -102,7 +104,7 @@ def go(page, browser, where, theme, size):
         visitor.wait_for_load_state("networkidle")
         return visitor
     if where.startswith("/"):
-        page.goto(f"{BASE}{where}", wait_until="networkidle")
+        page.goto(f"{BASE}{where}{view}", wait_until="networkidle")  # keep ?view=list/grid
         return page
     visitor_view = where.endswith("@")
     share_page = "!share" in where

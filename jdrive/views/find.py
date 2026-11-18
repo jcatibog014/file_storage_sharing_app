@@ -29,7 +29,9 @@ def search():
 @bp.get("/starred")
 @login_required
 def starred():
-    return render_template("starred.html", rows=find.starred(db.session(), g.user), menu_here="starred")
+    from .drive import view_mode
+    return render_template("starred.html", rows=find.starred(db.session(), g.user), menu_here="starred",
+                           view=view_mode())
 
 
 @bp.get("/recent")
@@ -39,7 +41,8 @@ def recent():
     rows = find.recent(s, g.user)
     find.forget_old(s, g.user)
     s.commit()
-    return render_template("recent.html", rows=rows, menu_here="recent")
+    from .drive import view_mode
+    return render_template("recent.html", rows=rows, menu_here="recent", view=view_mode())
 
 
 @bp.post("/items/<int:item_id>/star")

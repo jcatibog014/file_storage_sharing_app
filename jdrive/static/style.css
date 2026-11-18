@@ -994,3 +994,12 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 }
 .list-foot { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 1rem; color: var(--muted); font-size: 0.875rem; }
 .list-foot svg { flex: none; margin-top: 0.125rem; color: var(--accent-bright); }
+
+/* ---------- Grids for Recent, Starred and Trash ---------- */
+.file-card-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 1.75rem; }
+.file-card-name .star-mark { vertical-align: -1px; }
+.trash-grid .file-card-meta { padding-right: 0; white-space: normal; }
+.trash-card-actions { padding: 0 0.75rem 0.75rem; }
+.trash-card-actions .trash-actions { flex-direction: column; align-items: stretch; gap: 0.625rem; }
+.trash-card-actions .trash-actions form, .trash-card-actions .button { width: 100%; }
+.trash-card-actions .link-button { display: block; width: 100%; text-align: center; white-space: nowrap; }
