@@ -1019,6 +1019,8 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .login-center .card { width: 100%; max-width: 25rem; padding: 1.75rem; border-radius: 1rem; }
 .login-center #login-card { box-shadow: 0 14px 40px rgba(46, 26, 71, 0.14); }
 .login-center h1 { margin-bottom: 1.25rem; }
+.login-center h1:has(+ .card-lead) { margin-bottom: 0.375rem; }
+.card-lead { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.25rem; }
 .label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
 .label-link { font-weight: 600; font-size: 0.8125rem; }
 /* The main button: the logo's violets with a soft glow. */

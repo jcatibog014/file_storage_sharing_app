@@ -1,0 +1,6 @@
+{# The top of the login and sign-up pages: the app icon, the name and one short line, centred. #}
+<a class="login-brand" href="{{ url_for('auth.login') }}">
+  <img class="login-icon" src="{{ url_for('static', filename='icons/icon-192.png') }}" width="96" height="96" alt="">
+  <span class="login-name">{{ APP_NAME }}</span>
+</a>
+<p class="login-tagline">Your files, safe and easy to share.</p>

@@ -239,3 +239,11 @@ def test_the_login_page_is_just_the_logo_name_and_form(client):
     assert page.index('class="login-brand"') < page.index('id="login-card"')  # above the form
     assert "Keep your files in one safe place" not in page
     assert "Create an account" in page and "Forgot password?" in page and "Explore the demo" in page
+
+
+def test_the_sign_up_page_looks_like_the_login_page(client):
+    page = text(client.get("/signup"))
+    assert "welcome-panel" not in page and "<header" not in page
+    assert page.index('class="login-brand"') < page.index("<h1>Sign Up</h1>")
+    assert "icons/icon-192.png" in page and 'class="button login-button"' in page
+    assert "Have an account?" in page

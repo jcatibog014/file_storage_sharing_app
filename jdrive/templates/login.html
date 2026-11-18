@@ -8,11 +8,7 @@
    Log In card, then the ways in for new people (create an account, or the demo). #}
 {% block content %}
   <section class="login-center">
-    <a class="login-brand" href="{{ url_for('auth.login') }}">
-      <img class="login-icon" src="{{ url_for('static', filename='icons/icon-192.png') }}" width="96" height="96" alt="">
-      <span class="login-name">{{ APP_NAME }}</span>
-    </a>
-    <p class="login-tagline">Your files, safe and easy to share.</p>
+    {% include "_auth_brand.html" %}
 
     <div class="card" id="login-card">
       <h1>Log In</h1>
