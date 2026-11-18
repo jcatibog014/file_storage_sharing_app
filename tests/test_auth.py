@@ -231,10 +231,10 @@ def test_nothing_is_sent_to_demo_addresses(app):
         assert mailer.outbox() == []
 
 
-def test_the_login_page_has_a_violet_band_and_no_side_panel(client):
+def test_the_login_page_is_just_the_logo_name_and_form(client):
     page = text(client.get("/login"))
-    top = page.split('<header class="login-band">')[1].split("</header>")[0]
-    assert "JC Drive" in top and 'icons/logo.svg' in top and ">Log in</a>" in top
-    assert "welcome-panel" not in page  # no side panel
+    assert "<header" not in page and "welcome-panel" not in page  # no header, no side panel
+    brand = page.split('class="login-brand"')[1].split("</a>")[0]
+    assert "icons/logo.svg" in brand and "JC Drive" in brand
+    assert page.index('class="login-brand"') < page.index('id="login-card"')  # above the form
     assert "Your files, on the J side." not in page and "Keep your files in one safe place" not in page
-    assert '<section class="login-center">' in page and 'id="email"' in page

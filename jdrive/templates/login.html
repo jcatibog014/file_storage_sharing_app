@@ -5,18 +5,11 @@
 {% block body_class %}login-layout{% endblock %}
 {% block layout_class %}{% endblock %}
 {% block sidebar %}{% endblock %}
-{# The login page: a violet band across the top (the logo's colours) holding only the logo,
-   the name and a Log in button; the login card sits in the middle, over the band's edge. #}
-{% block public_top %}
-  <header class="login-band">
-    <div class="login-band-row">
-      <a class="logo" href="{{ url_for('auth.login') }}">{{ logo() }} {{ APP_NAME }}</a>
-      <a class="button button-small login-band-button" href="#email">Log in</a>
-    </div>
-  </header>
-{% endblock %}
+{# The login page: no header at all. The logo and the name sit just above the login card,
+   and the whole stack is in the middle of the page. #}
 {% block content %}
   <section class="login-center">
+    <a class="login-brand" href="{{ url_for('auth.login') }}">{{ logo(56) }} <span>{{ APP_NAME }}</span></a>
     <div class="card" id="login-card">
       <h1>Log In</h1>
       {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
