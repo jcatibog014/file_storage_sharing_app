@@ -70,16 +70,29 @@
   </div>
 {% endmacro %}
 
+{# A card's picture: the type icon, covered by a thumbnail for pictures (app.js removes a
+   thumbnail that can't be made). thumb=False for things that can't be opened (the Trash). #}
+{% macro card_art(item, thumb=True) %}
+  <span class="file-card-art type-{{ kind_of(item) }}">
+    {{ icon(icon_name(item), 40) }}
+    {% if thumb and kind_of(item) == 'image' and preview_kind(item) == 'image' %}<img src="{{ url_for('find.thumb', item_id=item.id) }}" alt="" loading="lazy" data-thumb>{% endif %}
+  </span>
+{% endmacro %}
+
+{# Where an item is, in words: owners see the folder; anyone else only who shared it
+   (a folder name could be one above what was shared with them). #}
+{% macro where(access) %}
+  {%- set item = access.item -%}
+  {%- if item.owner_id == g.user.id -%}{{ access.path[-2].name if access.path|length > 1 else 'My Drive' }}
+  {%- else -%}Shared by {{ item.owner.first_name }}{%- endif -%}
+{% endmacro %}
+
 {% macro item_grid(items, role, starred=()) %}
   <ul class="file-grid">
     {% for item in items %}
       <li class="file-card{% if item.is_folder %} is-folder{% endif %}">
         <a class="file-card-link" href="{{ item_url(item) }}">
-          <span class="file-card-art type-{{ kind_of(item) }}">
-            {{ icon(icon_name(item), 40) }}
-            {# The picture covers the icon; if it can't be made (not really a picture), app.js takes it away. #}
-            {% if kind_of(item) == 'image' and preview_kind(item) == 'image' %}<img src="{{ url_for('find.thumb', item_id=item.id) }}" alt="" loading="lazy" data-thumb>{% endif %}
-          </span>
+          {{ card_art(item) }}
           <span class="file-card-name">{{ item.name }}</span>
           <span class="file-card-meta">{{ KIND_NAMES[kind_of(item)] }}{% if not item.is_folder %} &middot; {{ item.size|filesize }}{% endif %}</span>
         </a>
@@ -143,4 +156,22 @@
       </tbody>
     </table>
   </div>
+{% endmacro %}
+
+{# The same things as access_list, as cards. #}
+{% macro access_grid(accesses, when=None, starred=()) %}
+  <ul class="file-grid">
+    {% for access in accesses %}
+      {% set item = access.item %}
+      {% set moment = when[loop.index0] if when else item.updated_at %}
+      <li class="file-card{% if item.is_folder %} is-folder{% endif %}">
+        <a class="file-card-link" href="{{ item_url(item) }}">
+          {{ card_art(item) }}
+          <span class="file-card-name">{{ item.name }}{% if item.id in starred %} <span class="star-mark" title="Starred">{{ icon('star-filled', 13) }}</span>{% endif %}</span>
+          <span class="file-card-meta" title="{{ moment|nice_datetime }}">{{ where(access) }} &middot; {{ moment|ago }}</span>
+        </a>
+        <div class="file-card-menu">{{ item_menu(item, access.role, is_starred=item.id in starred) }}</div>
+      </li>
+    {% endfor %}
+  </ul>
 {% endmacro %}

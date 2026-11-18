@@ -329,7 +329,7 @@ def trash_page():
     for item in files.trashed_items(s, g.user):
         days_left = max(0, files.TRASH_DAYS - (utcnow() - item.trashed_at).days)
         rows.append((item, days_left))
-    return render_template("trash.html", rows=rows, menu_here="trash",
+    return render_template("trash.html", rows=rows, menu_here="trash", view=view_mode(),
                            has_own=any(item.owner_id == g.user.id for item, _ in rows))
 
 

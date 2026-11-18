@@ -81,11 +81,13 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 ### Find Things
 
 - **Search** by name and type, in your drive and in everything shared with you.
-- **Recent** shows what you opened lately. **Starred** keeps your favourites.
+- **Recent** shows what you opened lately. **Starred** keeps your favourites. Both can show as a list or a grid.
 
 ![Search](docs/screenshots/search.png)
 
 ![Recent](docs/screenshots/recent.png)
+
+![Recent as a grid](docs/screenshots/recent-grid.png)
 
 ![Starred](docs/screenshots/starred.png)
 
@@ -95,6 +97,8 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 - **Space:** each account has 1 GB. The bar in the menu shows how much you use.
 
 ![The Trash](docs/screenshots/trash.png)
+
+![The Trash as a grid](docs/screenshots/trash-grid.png)
 
 ### Activity and Security
 

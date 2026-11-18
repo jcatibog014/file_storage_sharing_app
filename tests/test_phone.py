@@ -46,3 +46,20 @@ def test_the_demo_tag_explains_itself(app):
     post(client, "/demo")
     page = text(client.get("/drive"))
     assert "You are in a demo workspace. Everything here is deleted after 24 hours." in page
+
+
+def test_recent_starred_and_trash_have_a_grid(app):
+    client = browser(app, make_user(app))
+    keep = upload(client, "keep.txt")["item"]["id"]
+    gone = upload(client, "gone.txt")["item"]["id"]
+    client.get(f"/files/{keep}")
+    post(client, f"/items/{keep}/star")
+    post(client, f"/items/{gone}/trash")
+    for url, name in (("/recent", "keep.txt"), ("/starred", "keep.txt"), ("/trash", "gone.txt")):
+        listed = text(client.get(f"{url}?view=list"))
+        assert 'class="icon-button view-toggle"' in listed and 'class="file-table"' in listed, url
+        grid = text(client.get(f"{url}?view=grid"))
+        assert 'class="file-grid' in grid and name in grid and 'class="file-table"' not in grid, url
+    trash = text(client.get("/trash?view=grid"))
+    assert "Restore" in trash and "Delete for good" in trash and "auto-deletes in 30 days" in trash
+    assert f"/files/{gone}" not in trash  # things in the Trash can't be opened
