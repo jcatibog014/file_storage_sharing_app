@@ -5,11 +5,14 @@
 {% block body_class %}login-layout{% endblock %}
 {% block layout_class %}{% endblock %}
 {% block sidebar %}{% endblock %}
-{# The login page: a header with only the logo, the name and a Log in button; the form in the middle. #}
+{# The login page: a violet band across the top (the logo's colours) holding only the logo,
+   the name and a Log in button; the login card sits in the middle, over the band's edge. #}
 {% block public_top %}
-  <header class="login-top">
-    <a class="logo" href="{{ url_for('auth.login') }}">{{ logo() }} {{ APP_NAME }}</a>
-    <a class="button button-small login-top-button" href="#email">Log in</a>
+  <header class="login-band">
+    <div class="login-band-row">
+      <a class="logo" href="{{ url_for('auth.login') }}">{{ logo() }} {{ APP_NAME }}</a>
+      <a class="button button-small login-band-button" href="#email">Log in</a>
+    </div>
   </header>
 {% endblock %}
 {% block content %}

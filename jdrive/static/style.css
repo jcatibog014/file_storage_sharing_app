@@ -1004,28 +1004,48 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .trash-card-actions .trash-actions form, .trash-card-actions .button { width: 100%; }
 .trash-card-actions .link-button { display: block; width: 100%; text-align: center; white-space: nowrap; }
 
-/* ---------- The login page: a floating top bar and the form in the middle (no side panel) ---------- */
+/* ---------- The login page: a violet band, and the card over its edge (no side panel) ---------- */
 
+.login-layout { --band: min(46vh, 26rem); }
+@media (max-width: 40rem) { .login-layout { --band: 17rem; } }
 .login-layout .page { max-width: none; padding: 0; }
-/* The bar floats: it doesn't run edge to edge, it has room around it and a shadow,
-   and in dark mode it is a lighter plum with an edge, so it never melts into the page. */
-.login-top {
-  position: sticky; top: 0.75rem; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-  width: min(60rem, calc(100% - 2rem)); margin: 0.75rem auto 0; min-height: 3.75rem; padding: 0.625rem 0.75rem 0.625rem 1.125rem;
-  background: var(--sidebar); border: 1px solid transparent; border-radius: 999px;
-  box-shadow: 0 10px 30px rgba(46, 26, 71, 0.22);
+/* The band uses the logo's colours: violet fading to deep violet, with a soft light glow,
+   and a gentle curve at the bottom. Dark mode has a deeper version, so it still stands out. */
+.login-band {
+  height: var(--band); padding: 0 1rem;
+  background:
+    radial-gradient(60% 90% at 15% 0%, rgba(196, 181, 253, 0.45), transparent 70%),
+    radial-gradient(50% 80% at 90% 10%, rgba(255, 255, 255, 0.12), transparent 70%),
+    linear-gradient(160deg, #8b5cf6 0%, #6d28d9 55%, #5b21b6 100%);
+  border-radius: 0 0 50% 50% / 0 0 2.5rem 2.5rem;
 }
-.login-top .logo { font-size: 1.3125rem; }
-.login-top-button { background: #ffffff; border-color: #ffffff; color: #2e1a47 !important; border-radius: 999px; padding: 0 1.125rem; }
-.login-top-button:hover { background: #ede9fe; border-color: #ede9fe; box-shadow: none; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .login-top { background: #2e1a47; border-color: #4b2d77; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
+  :root:not([data-theme="light"]) .login-band {
+    background: radial-gradient(60% 90% at 15% 0%, rgba(139, 92, 246, 0.4), transparent 70%),
+                linear-gradient(160deg, #5b21b6 0%, #3b1f6b 60%, #2e1a47 100%);
+  }
 }
-:root[data-theme="dark"] .login-top { background: #2e1a47; border-color: #4b2d77; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
+:root[data-theme="dark"] .login-band {
+  background: radial-gradient(60% 90% at 15% 0%, rgba(139, 92, 246, 0.4), transparent 70%),
+              linear-gradient(160deg, #5b21b6 0%, #3b1f6b 60%, #2e1a47 100%);
+}
+.login-band-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  width: 100%; max-width: 60rem; min-height: 4.5rem; margin: 0 auto;
+}
+.login-band .logo { font-size: 1.375rem; }
+/* The violet logo would melt into the violet band: it sits on a small white tile there. */
+.login-band .logo-mark { box-sizing: content-box; padding: 0.3125rem; background: #ffffff; border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(46, 26, 71, 0.25); }
+.login-band-button { background: #ffffff; border-color: #ffffff; color: #5b21b6 !important; padding: 0 1.125rem; }
+.login-band-button:hover { background: #ede9fe; border-color: #ede9fe; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25); }
+/* The card starts a little past the middle of the band, so about half of it sits on the violet. */
 .login-center {
-  min-height: calc(100vh - 5.25rem); padding: 2rem 1rem; display: grid; align-content: center; justify-items: center; gap: 1rem;
+  position: relative; margin-top: calc(var(--band) * -0.45); padding: 0 1rem 3rem;
+  display: grid; justify-items: center; gap: 1rem;
 }
 .login-center .card { width: 100%; max-width: 26rem; }
+.login-center #login-card { box-shadow: 0 18px 45px rgba(46, 26, 71, 0.25); border-color: transparent; }
 .login-center h1 { margin-bottom: 1rem; text-align: center; }
 .login-center .card-note { text-align: center; }
 .login-center .button { width: 100%; }
