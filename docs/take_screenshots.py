@@ -33,6 +33,7 @@ PHONE = {"width": 390, "height": 844}
 # page), "@" (a visitor opening its link) or "?view=grid" at the end.
 PAGES = [
     ("login.png", "/login", "light", DESKTOP),
+    ("signup.png", "/signup", "light", DESKTOP),
     ("check-email.png", "signup", "light", DESKTOP),
     ("demo-start.png", "/drive", "light", DESKTOP),  # the welcome toast, right after Try demo
     ("my-drive.png", "/drive?view=list", "light", DESKTOP),
@@ -71,7 +72,7 @@ def new_page(browser, size, theme):
 def start_demo(browser, theme, size):
     page = new_page(browser, size, theme)
     page.goto(f"{BASE}/login")
-    page.get_by_role("button", name="Try the demo").click()
+    page.get_by_role("button", name="Explore the demo").click()
     page.wait_for_url(f"{BASE}/drive")
     return page
 
@@ -138,9 +139,10 @@ def main():
         pages = {}
         for name, where, theme, size in PAGES:
             key = (theme, size["width"])
-            if name == "login.png":
+            if name in ("login.png", "signup.png"):
+                # A fresh visitor: opening these inside the demo would leave the demo.
                 shot = new_page(browser, size, theme)
-                shot.goto(f"{BASE}/login")
+                shot.goto(f"{BASE}{where}")
             elif name == "demo-start.png":
                 shot = pages[key] = start_demo(browser, theme, size)  # the welcome toast is still showing
             else:
