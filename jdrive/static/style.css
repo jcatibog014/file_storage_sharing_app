@@ -1004,19 +1004,26 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .trash-card-actions .trash-actions form, .trash-card-actions .button { width: 100%; }
 .trash-card-actions .link-button { display: block; width: 100%; text-align: center; white-space: nowrap; }
 
-/* ---------- The login page: a top bar and the form in the middle (no side panel) ---------- */
+/* ---------- The login page: a floating top bar and the form in the middle (no side panel) ---------- */
 
 .login-layout .page { max-width: none; padding: 0; }
+/* The bar floats: it doesn't run edge to edge, it has room around it and a shadow,
+   and in dark mode it is a lighter plum with an edge, so it never melts into the page. */
 .login-top {
-  position: sticky; top: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-  min-height: 4rem; padding: 0.75rem 1rem; background: var(--sidebar);
+  position: sticky; top: 0.75rem; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  width: min(60rem, calc(100% - 2rem)); margin: 0.75rem auto 0; min-height: 3.75rem; padding: 0.625rem 0.75rem 0.625rem 1.125rem;
+  background: var(--sidebar); border: 1px solid transparent; border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(46, 26, 71, 0.22);
 }
-@media (min-width: 56rem) { .login-top { padding: 0.75rem 2.25rem; } }
-.login-top .logo { font-size: 1.375rem; }
-.login-top-button { background: #ffffff; border-color: #ffffff; color: #2e1a47 !important; }
+.login-top .logo { font-size: 1.3125rem; }
+.login-top-button { background: #ffffff; border-color: #ffffff; color: #2e1a47 !important; border-radius: 999px; padding: 0 1.125rem; }
 .login-top-button:hover { background: #ede9fe; border-color: #ede9fe; box-shadow: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .login-top { background: #2e1a47; border-color: #4b2d77; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
+}
+:root[data-theme="dark"] .login-top { background: #2e1a47; border-color: #4b2d77; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
 .login-center {
-  min-height: calc(100vh - 4rem); padding: 2rem 1rem; display: grid; align-content: center; justify-items: center; gap: 1rem;
+  min-height: calc(100vh - 5.25rem); padding: 2rem 1rem; display: grid; align-content: center; justify-items: center; gap: 1rem;
 }
 .login-center .card { width: 100%; max-width: 26rem; }
 .login-center h1 { margin-bottom: 1rem; text-align: center; }
