@@ -60,5 +60,5 @@ def test_the_logo_is_the_owners_folder(client):
     assert 'id="glow"' in logo and 'filter="url(#ds)"' in logo
     assert not (ICONS / "logo.png").exists()
     page = client.get("/login").get_data(as_text=True)
-    assert 'icons/logo.svg" width="79" height="72"' in page  # the login panel: 72 tall, a little wider
+    assert 'icons/logo.svg" width="37" height="34"' in page  # the login page's top bar: 34 tall, a little wider
     assert client.get("/static/icons/logo.svg").mimetype == "image/svg+xml"

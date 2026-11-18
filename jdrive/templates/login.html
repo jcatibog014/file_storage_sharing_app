@@ -1,37 +1,42 @@
 {% extends "base.html" %}
 {% from "_macros.html" import csrf, field %}
+{% from "_icons.html" import logo %}
 {% block title %}Log In - {{ APP_NAME }}{% endblock %}
-{% block body_class %}welcome-layout{% endblock %}
+{% block body_class %}login-layout{% endblock %}
 {% block layout_class %}{% endblock %}
 {% block sidebar %}{% endblock %}
+{# The login page: a header with only the logo, the name and a Log in button; the form in the middle. #}
+{% block public_top %}
+  <header class="login-top">
+    <a class="logo" href="{{ url_for('auth.login') }}">{{ logo() }} {{ APP_NAME }}</a>
+    <a class="button button-small login-top-button" href="#email">Log in</a>
+  </header>
+{% endblock %}
 {% block content %}
-  <div class="welcome">
-    {% include "_welcome.html" %}
-    <section class="welcome-cards">
-      <div class="card">
-        <h1>Log In</h1>
-        {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
-        <form method="post" action="{{ url_for('auth.login') }}" class="stack">
-          {{ csrf() }}
-          <input type="hidden" name="next" value="{{ next }}">
-          {{ field('email', 'Email', email, type='email', attrs='autocomplete="email" required autofocus') }}
-          {{ field('password', 'Password', type='password', attrs='autocomplete="current-password" required') }}
-          <button class="button" type="submit">Log in</button>
-        </form>
-        <p class="card-note">New here? <a href="{{ url_for('auth.signup', next=next or none) }}">Sign up</a>
-          &middot; <a href="{{ url_for('auth.forgot') }}">Forgot password?</a></p>
-      </div>
-      {% if has_demo %}
-      <p class="or-line">or</p>
-      <div class="card demo-card">
-        <h2>Explore the Demo</h2>
-        <p>Your own sample drive, deleted after 24 hours.</p>
-        <form method="post" action="{{ url_for('demo.start') }}">
-          {{ csrf() }}
-          <button class="button button-quiet" type="submit">Try the demo</button>
-        </form>
-      </div>
-      {% endif %}
-    </section>
-  </div>
+  <section class="login-center">
+    <div class="card" id="login-card">
+      <h1>Log In</h1>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+      <form method="post" action="{{ url_for('auth.login') }}" class="stack">
+        {{ csrf() }}
+        <input type="hidden" name="next" value="{{ next }}">
+        {{ field('email', 'Email', email, type='email', attrs='id="email" autocomplete="email" required autofocus') }}
+        {{ field('password', 'Password', type='password', attrs='autocomplete="current-password" required') }}
+        <button class="button" type="submit">Log in</button>
+      </form>
+      <p class="card-note">New here? <a href="{{ url_for('auth.signup', next=next or none) }}">Sign up</a>
+        &middot; <a href="{{ url_for('auth.forgot') }}">Forgot password?</a></p>
+    </div>
+    {% if has_demo %}
+    <p class="or-line">or</p>
+    <div class="card demo-card">
+      <h2>Explore the Demo</h2>
+      <p>Your own sample drive, deleted after 24 hours.</p>
+      <form method="post" action="{{ url_for('demo.start') }}">
+        {{ csrf() }}
+        <button class="button button-quiet" type="submit">Try the demo</button>
+      </form>
+    </div>
+    {% endif %}
+  </section>
 {% endblock %}

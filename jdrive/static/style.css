@@ -1003,3 +1003,24 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .trash-card-actions .trash-actions { flex-direction: column; align-items: stretch; gap: 0.625rem; }
 .trash-card-actions .trash-actions form, .trash-card-actions .button { width: 100%; }
 .trash-card-actions .link-button { display: block; width: 100%; text-align: center; white-space: nowrap; }
+
+/* ---------- The login page: a top bar and the form in the middle (no side panel) ---------- */
+
+.login-layout .page { max-width: none; padding: 0; }
+.login-top {
+  position: sticky; top: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  min-height: 4rem; padding: 0.75rem 1rem; background: var(--sidebar);
+}
+@media (min-width: 56rem) { .login-top { padding: 0.75rem 2.25rem; } }
+.login-top .logo { font-size: 1.375rem; }
+.login-top-button { background: #ffffff; border-color: #ffffff; color: #2e1a47 !important; }
+.login-top-button:hover { background: #ede9fe; border-color: #ede9fe; box-shadow: none; }
+.login-center {
+  min-height: calc(100vh - 4rem); padding: 2rem 1rem; display: grid; align-content: center; justify-items: center; gap: 1rem;
+}
+.login-center .card { width: 100%; max-width: 26rem; }
+.login-center h1 { margin-bottom: 1rem; text-align: center; }
+.login-center .card-note { text-align: center; }
+.login-center .button { width: 100%; }
+.login-center .demo-card { text-align: center; }
+.login-center .demo-card h2 { margin-bottom: 0.25rem; }
