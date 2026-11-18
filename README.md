@@ -24,6 +24,8 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 - JC Drive **emails you a 6-digit code**. Your account works only after you type it in, so the email must be real.
 - Forgot your password? JC Drive emails you a code to make a new one.
 
+![Sign up](docs/screenshots/signup.png)
+
 ![Check your email](docs/screenshots/check-email.png)
 
 ### Your Files

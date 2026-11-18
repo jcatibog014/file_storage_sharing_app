@@ -1,37 +1,38 @@
 {% extends "base.html" %}
 {% from "_macros.html" import csrf, field %}
 {% block title %}Log In - {{ APP_NAME }}{% endblock %}
-{% block body_class %}welcome-layout{% endblock %}
+{% block body_class %}login-layout{% endblock %}
 {% block layout_class %}{% endblock %}
 {% block sidebar %}{% endblock %}
+{# The login page: no header. The app icon, the name and a short line, centred, then the
+   Log In card, then the ways in for new people (create an account, or the demo). #}
 {% block content %}
-  <div class="welcome">
-    {% include "_welcome.html" %}
-    <section class="welcome-cards">
-      <div class="card">
-        <h1>Log In</h1>
-        {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
-        <form method="post" action="{{ url_for('auth.login') }}" class="stack">
-          {{ csrf() }}
-          <input type="hidden" name="next" value="{{ next }}">
-          {{ field('email', 'Email', email, type='email', attrs='autocomplete="email" required autofocus') }}
-          {{ field('password', 'Password', type='password', attrs='autocomplete="current-password" required') }}
-          <button class="button" type="submit">Log in</button>
-        </form>
-        <p class="card-note">New here? <a href="{{ url_for('auth.signup', next=next or none) }}">Sign up</a>
-          &middot; <a href="{{ url_for('auth.forgot') }}">Forgot password?</a></p>
-      </div>
-      {% if has_demo %}
-      <p class="or-line">or</p>
-      <div class="card demo-card">
-        <h2>Explore the Demo</h2>
-        <p>Your own sample drive, deleted after 24 hours.</p>
-        <form method="post" action="{{ url_for('demo.start') }}">
-          {{ csrf() }}
-          <button class="button button-quiet" type="submit">Try the demo</button>
-        </form>
-      </div>
-      {% endif %}
-    </section>
-  </div>
+  <section class="login-center">
+    {% include "_auth_brand.html" %}
+
+    <div class="card" id="login-card">
+      <h1>Log In</h1>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+      <form method="post" action="{{ url_for('auth.login') }}" class="stack">
+        {{ csrf() }}
+        <input type="hidden" name="next" value="{{ next }}">
+        {{ field('email', 'Email', email, type='email', attrs='id="email" autocomplete="email" required autofocus') }}
+        <label class="field">
+          <span class="field-label label-row">Password <a class="label-link" href="{{ url_for('auth.forgot') }}">Forgot password?</a></span>
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="button login-button" type="submit">Log in</button>
+      </form>
+    </div>
+
+    <p class="login-more">New here? <a href="{{ url_for('auth.signup', next=next or none) }}">Create an account</a>.</p>
+    {% if has_demo %}
+      <form class="login-demo" method="post" action="{{ url_for('demo.start') }}">
+        {{ csrf() }}
+        <span>Just looking?</span>
+        <button class="link-button" type="submit">Explore the demo</button>
+        <span class="muted">(deleted after 24 hours)</span>
+      </form>
+    {% endif %}
+  </section>
 {% endblock %}
