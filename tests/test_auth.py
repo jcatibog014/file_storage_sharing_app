@@ -235,6 +235,7 @@ def test_the_login_page_is_just_the_logo_name_and_form(client):
     page = text(client.get("/login"))
     assert "<header" not in page and "welcome-panel" not in page  # no header, no side panel
     brand = page.split('class="login-brand"')[1].split("</a>")[0]
-    assert "icons/logo.svg" in brand and "JC Drive" in brand
+    assert "icons/icon-192.png" in brand and "JC Drive" in brand
     assert page.index('class="login-brand"') < page.index('id="login-card"')  # above the form
-    assert "Your files, on the J side." not in page and "Keep your files in one safe place" not in page
+    assert "Keep your files in one safe place" not in page
+    assert "Create an account" in page and "Forgot password?" in page and "Explore the demo" in page
