@@ -283,7 +283,19 @@ function setUpUploads() {
     panel.setAttribute("aria-live", "polite");
     const head = document.createElement("div");
     head.className = "upload-panel-head";
-    head.textContent = "Uploading";
+    const title = document.createElement("span");
+    title.className = "upload-panel-title";
+    title.textContent = "Uploading";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "toast-close";
+    close.setAttribute("aria-label", "Close");
+    close.textContent = "\u00d7";
+    close.addEventListener("click", () => {
+      panel.remove();
+      panel = null;
+    });
+    head.append(title, close);
     panel.append(head);
     rows = document.createElement("div");
     rows.className = "upload-rows";
@@ -386,6 +398,8 @@ function setUpUploads() {
     const chosen = [...fileList];
     if (!chosen.length) return;
     makePanel();
+    const title = panel.querySelector(".upload-panel-title");
+    title.textContent = chosen.length === 1 ? "Uploading 1 file" : `Uploading ${chosen.length} files`;
     // Three at a time: quick, without choking a slow connection.
     const queue = chosen.slice();
     const results = [];
@@ -394,13 +408,20 @@ function setUpUploads() {
     };
     await Promise.all([worker(), worker(), worker()]);
     if (results.every(Boolean)) {
+      title.textContent = "Done";
       window.location.reload();
-    } else {
+      return;
+    }
+    const failed = results.filter((ok) => !ok).length;
+    title.textContent = failed === 1 ? "1 file didn't upload" : `${failed} files didn't upload`;
+    panel.classList.add("has-problem");
+    if (failed < results.length) {
+      // Some went in: a way to see them (the page shows the folder as it was).
       const again = document.createElement("a");
       again.href = window.location.href;
-      again.className = "link-button";
-      again.textContent = "Refresh";
-      panel.querySelector(".upload-panel-head").append(again);
+      again.className = "upload-panel-link";
+      again.textContent = "Show the new files";
+      panel.append(again);
     }
   };
 
@@ -464,7 +485,61 @@ function setUpThumbs() {
   });
 }
 
+// Tooltips in the app's own colours. The browser's own box (from title="") can't be styled,
+// so while the pointer or keyboard is on something, its title moves to data-tip and comes
+// back afterwards (screen readers still find it the rest of the time).
+function setUpTips() {
+  const tip = document.createElement("div");
+  tip.className = "tip";
+  tip.setAttribute("role", "tooltip");
+  tip.hidden = true;
+  document.body.append(tip);
+  let current = null;
+  const hide = () => {
+    if (current && current.dataset.tip !== undefined) {
+      current.setAttribute("title", current.dataset.tip);
+      delete current.dataset.tip;
+    }
+    current = null;
+    tip.hidden = true;
+  };
+  const show = (element) => {
+    if (element === current) return;
+    hide();
+    const words = element.getAttribute("title");
+    if (!words) return;
+    current = element;
+    element.dataset.tip = words;
+    element.removeAttribute("title");
+    tip.textContent = words;
+    tip.hidden = false;
+    const box = element.getBoundingClientRect();
+    const width = tip.offsetWidth;
+    const left = Math.min(Math.max(8, box.left + box.width / 2 - width / 2), window.innerWidth - width - 8);
+    const below = box.bottom + 8 + tip.offsetHeight < window.innerHeight;
+    tip.style.left = `${left + window.scrollX}px`;
+    tip.style.top = `${(below ? box.bottom + 8 : box.top - tip.offsetHeight - 8) + window.scrollY}px`;
+  };
+  document.addEventListener("pointerover", (event) => {
+    const element = event.target.closest("[title]");
+    if (element) show(element);
+  });
+  document.addEventListener("pointerout", (event) => {
+    if (current && !current.contains(event.relatedTarget)) hide();
+  });
+  document.addEventListener("focusin", (event) => {
+    const element = event.target.closest("[title]");
+    if (element) show(element);
+  });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") hide();
+  });
+  window.addEventListener("scroll", hide, { passive: true });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  setUpTips();
   setUpThumbs();
   setUpUploads();
   setUpSelectOnOpen();

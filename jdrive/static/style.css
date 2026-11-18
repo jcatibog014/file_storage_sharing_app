@@ -923,7 +923,7 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .role-name { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
 .where-link { color: var(--muted) !important; }
 .where-link:hover { color: var(--accent-text) !important; }
-.button-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff !important; }
+.button-danger-solid { background: #b42318; border-color: #b42318; color: #fff !important; }
 .button-danger-solid:hover { background: #912018; border-color: #912018; box-shadow: none; }
 
 /* ---------- After the phone review ---------- */
@@ -1003,3 +1003,19 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
 .trash-card-actions .trash-actions { flex-direction: column; align-items: stretch; gap: 0.625rem; }
 .trash-card-actions .trash-actions form, .trash-card-actions .button { width: 100%; }
 .trash-card-actions .link-button { display: block; width: 100%; text-align: center; white-space: nowrap; }
+
+/* ---------- What JavaScript draws, in the theme ---------- */
+
+/* The upload panel sits over the files, not over the menu, and says how it went. */
+@media (min-width: 56rem) { .upload-panel { left: calc(var(--sidebar-width) + 1.25rem); } }
+.upload-panel-head .toast-close { margin-right: -0.25rem; }
+.upload-panel.has-problem { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+.upload-panel.has-problem .upload-panel-title { color: var(--danger); }
+.upload-panel-link { display: block; padding: 0.625rem 0.875rem; border-top: 1px solid var(--border); font-size: 0.875rem; font-weight: 600; }
+
+/* Tooltips: plum ink with white words (light), white with plum words (dark). */
+.tip {
+  position: absolute; z-index: 200; max-width: 18rem; padding: 0.375rem 0.625rem; border-radius: 0.5rem;
+  background: var(--text); color: var(--bg); font-size: 0.8125rem; font-weight: 600; line-height: 1.35;
+  box-shadow: var(--shadow-lifted); pointer-events: none;
+}

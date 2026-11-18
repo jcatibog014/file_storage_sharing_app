@@ -68,3 +68,15 @@ def test_room_to_drop_more_files(app):
     client = browser(app, make_user(app))
     upload(client, "a.txt")
     assert "Drag and drop files here to upload" in words(client.get("/drive"))
+
+
+def test_what_javascript_draws_follows_the_theme(app):
+    from pathlib import Path
+    static = Path(app.static_folder)
+    script = (static / "app.js").read_text(encoding="utf-8")
+    style = (static / "style.css").read_text(encoding="utf-8")
+    assert "function setUpTips()" in script and ".tip {" in style  # our tooltips, not the browser's box
+    assert "upload-panel-title" in script and "didn't upload" in script
+    assert ".button-danger-solid { background: #b42318;" in style  # readable in dark mode too
+    page = browser(app, make_user(app)).get("/drive").get_data(as_text=True)
+    assert 'content="#110c19" media="(prefers-color-scheme: dark)"' in page
