@@ -121,7 +121,8 @@ def build(s, moment):
     # Ana, as an Editor, added a picture to the trip.
     _file(s, me, baguio, "flan", ana, ago(days=10), name="Pasalubong.jpg")
 
-    # Links: the trip for anyone (a week), and the Homework Box takes files from anyone.
+    # Links: the trip for anyone (a week), the Homework Box takes files from anyone,
+    # and anyone with Work's link can edit it.
     trip_link = links.turn_on(s, me, baguio, ago(days=11))
     trip_link.expires_at, trip_link.open_count = moment + timedelta(days=7), 14
     activity.log(s, me, baguio, "link_on", ago(days=11))
@@ -129,6 +130,9 @@ def build(s, moment):
     box_link = links.turn_on(s, me, homework, ago(days=9))
     box_link.role, box_link.open_count = links.UPLOADER, 3
     activity.log(s, me, homework, "link_on", ago(days=9))
+    work_link = links.turn_on(s, me, work, ago(days=5))
+    work_link.role, work_link.open_count = links.EDITOR, 6
+    activity.log(s, me, work, "link_on", ago(days=5))
     sent = _file(s, me, homework, "homework-carlo", me, ago(days=1))
     sent.created_by_id = None  # a visitor with the upload link, not a person with an account
     for version in s.scalars(select(FileVersion).where(FileVersion.item_id == sent.id)):

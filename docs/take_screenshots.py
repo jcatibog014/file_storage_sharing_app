@@ -48,6 +48,7 @@ PAGES = [
     ("shared-with-me.png", "/shared", "light", DESKTOP),
     ("visitor-folder.png", "Photos > Baguio Trip@", "light", DESKTOP),
     ("visitor-upload.png", "School > Homework Box@", "light", DESKTOP),
+    ("visitor-edit.png", "Work@", "light", DESKTOP),  # a "Can edit" link: Upload, New folder, the ... menu
     ("search.png", "/search?q=a", "light", DESKTOP),
     ("recent.png", "/recent?view=list", "light", DESKTOP),
     ("recent-grid.png", "/recent?view=grid", "light", DESKTOP),

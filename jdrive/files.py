@@ -204,7 +204,8 @@ def create_folder(s, user, owner_id, parent, name, moment, color=None):
             raise Problem(f"Folders can go at most {tree.MAX_DEPTH} levels deep.")
     parent_id = parent.id if parent else None
     folder = Item(kind=FOLDER, name=unique_name(s, owner_id, parent_id, name), parent_id=parent_id,
-                  owner_id=owner_id, created_by_id=user.id, created_at=moment, updated_at=moment, color=color)
+                  owner_id=owner_id, created_by_id=user.id if user else None, created_at=moment, updated_at=moment,
+                  color=color)
     s.add(folder)
     s.flush()
     return folder
@@ -392,7 +393,7 @@ def trash(s, user, item, moment):
     """Into the Trash: hidden from every list and page (with everything inside it),
     but still taking space, until it is restored or deleted for good."""
     item.trashed_at = moment
-    item.trashed_by_id = user.id
+    item.trashed_by_id = user.id if user else None  # None: a visitor with a "Can edit" link
     s.flush()
 
 

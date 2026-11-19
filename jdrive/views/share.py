@@ -132,7 +132,7 @@ def page(item_id):
     return render_template("share.html", access=access, item=item, path=access.path,
                            shares=sharing.shares_on(s, item), inherited=sharing.inherited_shares(s, access.path),
                            link=link, link_address=links.address(link) if link else None, errors=errors, form=form,
-                           link_open=links.is_open(link), LINK_ROLES=links.LINK_ROLES,
+                           link_open=links.is_open(link), LINK_ROLES=links.LINK_ROLES, LINK_ROLE_HELP=links.LINK_ROLE_HELP,
                            ROLE_CHOICES=[(role, permissions.ROLE_NAMES[role]) for role in permissions.SHARE_ROLES]), \
         400 if errors else 200
 

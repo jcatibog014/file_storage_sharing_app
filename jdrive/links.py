@@ -10,8 +10,11 @@ opens it. So:
 - a stolen copy of the database opens nothing (it has no SECRET_KEY);
 - "Make a new link" changes the nonce, and the old address stops working.
 
-A link gives its role (Viewer) only inside the linked item's tree: a folder
-link opens that folder and everything in it, never the folders around it.
+A link gives its role only inside the linked item's tree: a folder link opens
+that folder and everything in it, never the folders around it. Three roles:
+"Can view" (open and download), "Can upload" (a drop box: add files, see
+nothing) and "Can edit" (open, add files and folders, rename, move to the
+Trash; never delete for good or share). The last two are for folders only.
 """
 import base64
 import hashlib
@@ -28,8 +31,14 @@ from . import limits, tree
 from .dates import from_local, utcnow
 from .models import ShareLink
 
-VIEWER, UPLOADER = "viewer", "uploader"
-LINK_ROLES = {VIEWER: "Can view", UPLOADER: "Can upload"}
+VIEWER, UPLOADER, EDITOR = "viewer", "uploader", "editor"
+LINK_ROLES = {VIEWER: "Can view", UPLOADER: "Can upload", EDITOR: "Can edit"}
+LINK_ROLE_HELP = {
+    VIEWER: "Open the folder and what is in it.",
+    UPLOADER: "Add files to it (like a drop box), but not see what's there.",
+    EDITOR: "Open it, add files and folders, rename, and move things to the Trash.",
+}
+SEES = (VIEWER, EDITOR)        # the roles that can open what is inside
 PASSWORD_MIN_LENGTH = 4
 UNLOCK_SECONDS = 3600          # a right password is remembered this long, in this browser
 PASSWORD_TRIES = 10            # per link and network, every 15 minutes
@@ -123,9 +132,11 @@ def expiry_from_day(text, moment):
 def save_settings(link, item, role, expires_text, allow_download, password_action, password, moment):
     """The Share page's link settings form."""
     if role not in LINK_ROLES:
-        raise Problem("Choose Can view or Can upload.")
+        raise Problem("Choose Can view, Can upload or Can edit.")
     if role == UPLOADER and not item.is_folder:
         raise Problem("Upload links are for folders.")
+    if role == EDITOR and not item.is_folder:
+        raise Problem("Edit links are for folders.")
     expires = expiry_from_day(expires_text, moment)
     if password_action == "set":
         if len(password) < PASSWORD_MIN_LENGTH:

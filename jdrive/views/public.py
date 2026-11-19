@@ -5,7 +5,8 @@ Every request checks, in this order:
 2. the password, if the link has one (a small form until it is typed in);
 3. what the link may do: a "Can view" link opens the linked item and what is
    inside it (downloads only if allowed); a "Can upload" link only takes new
-   files into its folder and never shows what is there.
+   files into its folder and never shows what is there; a "Can edit" link
+   opens it too, and adds, renames and moves things to the Trash inside it.
 Anything else is a 404.
 """
 from flask import (Blueprint, abort, flash, g, jsonify, make_response, redirect, render_template, request, session,
@@ -13,7 +14,7 @@ from flask import (Blueprint, abort, flash, g, jsonify, make_response, redirect,
 
 from .. import activity, db, files, limits, links, notify, permissions, previews, storage
 from ..dates import utcnow
-from ..models import FILE, Upload
+from ..models import FILE, Item, Upload
 
 bp = Blueprint("public", __name__)
 UPLOADS_PER_HOUR = 100   # per network, through upload links
@@ -44,8 +45,8 @@ def _locked(link, token):
 
 
 def _viewer_path(s, link, item_id):
-    """The path to an item inside a "Can view" link's tree, or 404."""
-    if link.role != links.VIEWER:
+    """The path to an item inside a "Can view" or "Can edit" link's tree, or 404."""
+    if link.role not in links.SEES:
         abort(404)
     path = links.path_inside(s, link, item_id)
     if path is None:
@@ -132,13 +133,28 @@ def download(token, item_id):
     return _private(redirect(storage.get().presign_get(version.blob.key, item.name, version.blob.content_type)))
 
 
-# ---------- "Can upload" links: the same three steps as a logged-in upload ----------
+# ---------- "Can upload" and "Can edit" links: the same three steps as a logged-in upload ----------
 
 def _upload_link(s, token):
     link = _link_or_404(s, token)
-    if link.role != links.UPLOADER or not links.is_unlocked(link) or links.path_inside(s, link, link.item_id) is None:
+    if (link.role not in (links.UPLOADER, links.EDITOR) or not links.is_unlocked(link)
+            or links.path_inside(s, link, link.item_id) is None):
         abort(404)
     return link
+
+
+def _upload_folder(s, link, parent_id):
+    """Where a file goes: an upload link's own folder; for an edit link, any folder inside it."""
+    if link.role == links.UPLOADER or not parent_id:
+        return link.item
+    try:
+        number = int(parent_id)
+    except (TypeError, ValueError):
+        abort(404)
+    path = links.path_inside(s, link, number)
+    if path is None or not path[-1].is_folder:
+        abort(404)
+    return path[-1]
 
 
 def _json_problem(message, status=400):
@@ -154,7 +170,7 @@ def api_start_upload(token):
         s.commit()
         return _json_problem("That's a lot of uploads for one hour. Please wait a while.", 429)
     data = request.get_json(silent=True) or {}
-    folder = link.item
+    folder = _upload_folder(s, link, data.get("parent_id"))
     try:
         upload, signed = files.start_upload(s, None, folder.owner_id, folder, data.get("name", ""),
                                             int(data.get("size", -1)), data.get("type", ""), moment, link=link)
@@ -188,48 +204,168 @@ def api_finish_upload(token, upload_id):
         return _json_problem(str(problem))
     _arrived(s, link, item)
     s.commit()
+    session["link_uploads"] = [number for number in session.get("link_uploads", []) if number != upload_id]
+    if link.role == links.EDITOR:
+        return jsonify({"ok": True})  # the page shows the new file; no "You sent" list
     sent = dict(session.get("link_sent", {}))
     sent[str(link.id)] = (sent.get(str(link.id), []) + [item.name])[-SENT_LIST_LENGTH:]
     session["link_sent"] = sent
-    session["link_uploads"] = [number for number in session.get("link_uploads", []) if number != upload_id]
     return jsonify({"ok": True})
 
 
 def _arrived(s, link, item):
-    """A file came in through an upload link: note it, and tell the owner."""
+    """A file came in through a link: note it, and tell the owner."""
     moment = utcnow()
-    activity.log(s, g.user, item, "link_upload", moment, detail=f"into {link.item.name}")
-    notify.send(s, link.item.owner_id, f"Someone sent {item.name} into {link.item.name}.",
-                url_for("drive.folder", item_id=link.item.id), moment)
+    folder = s.get(Item, item.parent_id)
+    activity.log(s, g.user, item, "link_upload", moment, detail=f"into {folder.name}")
+    notify.send(s, folder.owner_id, f"Someone sent {item.name} into {folder.name}.",
+                url_for("drive.folder", item_id=folder.id), moment)
 
 
 @bp.post("/s/<token>/upload")
 def upload_form(token):
-    """The no-JavaScript way for an upload link."""
+    """The no-JavaScript way for an upload or edit link."""
     s = db.session()
     link = _upload_link(s, token)
+    folder = _upload_folder(s, link, request.form.get("parent_id"))
+    back = link_page(token, link, folder)
     moment = utcnow()
     chosen = [f for f in request.files.getlist("files") if f and f.filename]
     if not chosen:
         flash("Choose a file to send first.", "error")
-        return redirect(url_for("public.link", token=token))
+        return redirect(back)
     names = []
     for file_storage in chosen:
         if not limits.hit(s, f"link-upload:{limits.client_ip()}", UPLOADS_PER_HOUR, 3600, moment):
             flash("That's a lot of uploads for one hour. Please wait a while.", "error")
             break
         try:
-            item = files.upload_through_server(s, None, link.item.owner_id, link.item, file_storage, moment)
+            item = files.upload_through_server(s, None, folder.owner_id, folder, file_storage, moment)
             _arrived(s, link, item)
             names.append(item.name)
             s.commit()
         except files.Problem as problem:
             s.rollback()
             flash(f"{file_storage.filename}: {problem}", "error")
-    if names:
+    if names and link.role == links.EDITOR:
+        flash(f"Uploaded {names[0]}." if len(names) == 1 else f"Uploaded {len(names)} files.")
+    elif names:
         sent = dict(session.get("link_sent", {}))
         sent[str(link.id)] = (sent.get(str(link.id), []) + names)[-SENT_LIST_LENGTH:]
         session["link_sent"] = sent
         flash(f"Sent {names[0]}." if len(names) == 1 else f"Sent {len(names)} files.")
-    return redirect(url_for("public.link", token=token))
+    return redirect(back)
+
+# ---------- "Can edit" links: open it, and add, rename and remove things ----------
+# A visitor changes things inside the linked folder only, never the linked folder
+# itself (so the owner's own folder can't be renamed or thrown away by a visitor).
+
+EDITS_PER_HOUR = 200     # per network, through edit links (uploads are counted separately)
+
+
+def _edit_link(s, token):
+    link = _link_or_404(s, token)
+    if link.role != links.EDITOR or not links.is_unlocked(link) or links.path_inside(s, link, link.item_id) is None:
+        abort(404)
+    return link
+
+
+def _inside_edit_link(s, link, item_id, folder=False):
+    """An item inside an edit link's tree (a folder if asked), or 404."""
+    path = links.path_inside(s, link, item_id)
+    if path is None or (folder and not path[-1].is_folder):
+        abort(404)
+    return path[-1]
+
+
+def _below_top(s, link, item_id):
+    """Something to rename or throw away: inside the tree, but not the linked folder itself."""
+    item = _inside_edit_link(s, link, item_id)
+    if item.id == link.item_id:
+        abort(403, "Only the owner can rename or remove the shared folder itself.")
+    return item
+
+
+def _edits_allowed(s, moment):
+    return limits.hit(s, f"link-edit:{limits.client_ip()}", EDITS_PER_HOUR, 3600, moment)
+
+
+def link_page(token, link, item):
+    """The visitor's address for a folder or file in the link."""
+    if item.id == link.item_id:
+        return url_for("public.link", token=token)
+    return url_for("public.inside", token=token, item_id=item.id)
+
+
+@bp.post("/s/<token>/folders/new")
+def new_folder(token):
+    s = db.session()
+    link = _edit_link(s, token)
+    parent = _inside_edit_link(s, link, request.form.get("parent_id", type=int) or link.item_id, folder=True)
+    moment = utcnow()
+    if not _edits_allowed(s, moment):
+        s.commit()
+        flash("That's a lot of changes for one hour. Please wait a while.", "error")
+        return redirect(link_page(token, link, parent))
+    try:
+        folder = files.create_folder(s, None, parent.owner_id, parent, request.form.get("name", ""), moment,
+                                     color=request.form.get("color"))
+    except files.Problem as problem:
+        s.rollback()
+        flash(str(problem), "error")
+        return redirect(link_page(token, link, parent))
+    activity.log(s, g.user, folder, "folder_made", moment, detail="through the link")
+    s.commit()
+    flash(f"Made the folder {folder.name}.")
+    return redirect(link_page(token, link, parent))
+
+
+@bp.route("/s/<token>/rename/<int:item_id>", methods=["GET", "POST"])
+def rename(token, item_id):
+    s = db.session()
+    link = _edit_link(s, token)
+    item = _below_top(s, link, item_id)
+    parent = s.get(Item, item.parent_id)
+    error = None
+    if request.method == "POST":
+        moment = utcnow()
+        old_name = item.name
+        if not _edits_allowed(s, moment):
+            error = "That's a lot of changes for one hour. Please wait a while."
+        else:
+            try:
+                files.rename(s, item, request.form.get("name", ""), moment)
+            except files.Problem as problem:
+                error = str(problem)
+        if error is None:
+            if item.name != old_name:
+                activity.log(s, g.user, item, "renamed", moment, detail=f"from {old_name} through the link")
+            s.commit()
+            flash(f"Renamed to {item.name}.")
+            return redirect(link_page(token, link, parent))
+        s.commit()  # the counted try
+    return _private(render_template("public_rename.html", link=link, token=token, item=item,
+                                    back=link_page(token, link, parent), error=error),
+                    400 if error else None)
+
+
+@bp.post("/s/<token>/trash/<int:item_id>")
+def trash(token, item_id):
+    s = db.session()
+    link = _edit_link(s, token)
+    item = _below_top(s, link, item_id)
+    parent = s.get(Item, item.parent_id)
+    moment = utcnow()
+    if not _edits_allowed(s, moment):
+        s.commit()
+        flash("That's a lot of changes for one hour. Please wait a while.", "error")
+        return redirect(link_page(token, link, parent))
+    files.trash(s, None, item, moment)
+    activity.log(s, g.user, item, "trashed", moment, detail="through the link")
+    # The owner should know: it is in their Trash for a while, and they can bring it back.
+    notify.send(s, item.owner_id, f"Someone with the link moved {item.name} to the Trash.",
+                url_for("drive.trash_page"), moment)
+    s.commit()
+    flash(f"Moved {item.name} to the Trash. The owner can bring it back.")
+    return redirect(link_page(token, link, parent))
 

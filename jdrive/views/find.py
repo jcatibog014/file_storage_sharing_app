@@ -118,7 +118,7 @@ def folder_zip(item_id):
 
 def _link_access(s, token, item_id):
     link = links.find(s, token)
-    if not links.is_open(link) or not links.is_unlocked(link) or link.role != links.VIEWER:
+    if not links.is_open(link) or not links.is_unlocked(link) or link.role not in links.SEES:
         abort(404)
     path = links.path_inside(s, link, item_id)
     if path is None:
