@@ -66,6 +66,16 @@ def test_every_page_has_an_example(app):
         assert "empty-state" not in response.get_data(as_text=True), url
 
 
+def test_another_local_app_does_not_log_the_demo_out(app):
+    # Cookies ignore the port: another Flask app on 127.0.0.1 sets a cookie called
+    # "session" on the same host. JC Drive's own cookie name keeps them apart.
+    client = start_demo(app)
+    assert app.config["SESSION_COOKIE_NAME"] != "session"
+    client.set_cookie("session", "another-apps-cookie", domain="localhost")
+    for where in ("/recent", "/starred", "/shared", "/trash"):
+        assert client.get(where).status_code == 200, where
+
+
 def test_the_demo_links_work_for_visitors(app):
     start_demo(app)
     with app.app_context(), app.test_request_context():
