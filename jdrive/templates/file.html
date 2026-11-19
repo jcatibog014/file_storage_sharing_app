@@ -56,12 +56,13 @@
         </div>
         <ol class="versions">
           {% for v in versions %}
-            <li class="version{% if loop.first %} is-current{% endif %}">
+            {% set is_current = version and v.id == version.id %}
+            <li class="version{% if is_current %} is-current{% endif %}">
               <div class="version-text">
-                <strong>Version {{ v.number }}</strong>{% if loop.first %} <span class="badge badge-accent">Current</span>{% endif %}
+                <strong>Version {{ v.number }}</strong>{% if is_current %} <span class="badge badge-accent">Current</span>{% endif %}
                 <small>{{ v.created_at|nice_datetime }} &middot; {{ v.size|filesize }}{% if v.uploaded_by %} &middot; {{ 'you' if v.uploaded_by_id == g.user.id else v.uploaded_by.first_name }}{% endif %}</small>
               </div>
-              {% if not loop.first %}
+              {% if not is_current %}
                 <details class="item-menu" data-popover>
                   <summary class="icon-button" title="More for version {{ v.number }}"><span class="visually-hidden">More for version {{ v.number }}</span>{{ icon('more') }}</summary>
                   <div class="menu-items">

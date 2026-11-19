@@ -147,6 +147,11 @@ def versions(s, item):
 
 
 def current_version(s, item):
+    """The version in use: the one made current, or else the newest."""
+    if item.current_version_id is not None:
+        chosen = s.get(FileVersion, item.current_version_id)
+        if chosen is not None and chosen.item_id == item.id:
+            return chosen
     return s.scalar(select(FileVersion).where(FileVersion.item_id == item.id)
                     .order_by(FileVersion.number.desc()).limit(1))
 
@@ -284,6 +289,7 @@ def _add_file(s, user, owner_id, parent_id, target_id, name, blob, moment):
         s.add(item)
         number = 1
     item.size, item.content_type, item.updated_at = blob.size, blob.content_type, moment
+    item.current_version_id = None  # the new one is the current one
     s.flush()
     s.add(FileVersion(item_id=item.id, number=number, blob_id=blob.id, size=blob.size,
                       uploaded_by_id=user.id if user else None, created_at=moment))
@@ -293,8 +299,9 @@ def _add_file(s, user, owner_id, parent_id, target_id, name, blob, moment):
 
 
 def _trim_versions(s, item):
-    """Keep the newest MAX_VERSIONS. The old blobs are swept by the timer (or now, by the caller)."""
-    old = versions(s, item)[MAX_VERSIONS:]
+    """Keep the newest MAX_VERSIONS (never the current one). The old blobs are swept by the timer
+    (or now, by the caller)."""
+    old = [v for v in versions(s, item)[MAX_VERSIONS:] if v.id != item.current_version_id]
     for version in old:
         s.info.setdefault("sweep_blob_ids", []).append(version.blob_id)
         s.delete(version)
@@ -310,12 +317,16 @@ def sweep_after_commit(s):
 
 
 def restore_version(s, user, item, version, moment):
-    """Make an old version the current one again: a NEW version pointing at the
-    same blob (nothing is copied, and the history stays complete)."""
+    """Make an old version the current one again. It just gets the Current tag:
+    no new version is added and nothing is copied, so it takes no extra space.
+    (The next upload makes the newest current again.)"""
     if version.item_id != item.id:
         raise Problem("That version belongs to another file.")
-    check_space(s, item.owner_id, version.size)
-    return _add_file(s, user, item.owner_id, item.parent_id, item.id, item.name, version.blob, moment)
+    newest = versions(s, item)[0]
+    item.current_version_id = None if version.id == newest.id else version.id
+    item.size, item.content_type, item.updated_at = version.size, version.blob.content_type, moment
+    s.flush()
+    return item
 
 
 def delete_version(s, item, version):
