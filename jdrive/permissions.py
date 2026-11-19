@@ -33,6 +33,7 @@ NEEDS = {
     "upload": EDITOR,
     "new_folder": EDITOR,
     "rename": EDITOR,
+    "color": EDITOR,
     "move": EDITOR,
     "new_version": EDITOR,
     "trash": EDITOR,

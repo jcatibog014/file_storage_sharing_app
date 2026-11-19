@@ -136,6 +136,8 @@ class Item(Base):
     # a trashed folder goes with it). Deleted for good after 30 days.
     trashed_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     trashed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # Folders only: a colour from files.FOLDER_COLORS. None = the usual violet.
+    color: Mapped[str | None] = mapped_column(String(12))
 
     owner: Mapped[User] = relationship(foreign_keys=[owner_id])
     created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])

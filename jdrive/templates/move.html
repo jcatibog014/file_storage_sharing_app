@@ -17,7 +17,7 @@
     </nav>
     <ul class="move-list">
       {% for f in folders %}
-        <li><a href="{{ url_for('drive.move', item_id=item.id, at=f.id) }}"><span class="type-icon type-folder">{{ icon('folder') }}</span> {{ f.name }} {{ icon('chevron-right', 16) }}</a></li>
+        <li><a href="{{ url_for('drive.move', item_id=item.id, at=f.id) }}"><span class="type-icon {{ type_class(f) }}">{{ icon('folder') }}</span> {{ f.name }} {{ icon('chevron-right', 16) }}</a></li>
       {% else %}
         <li class="muted move-none">No folders in here.</li>
       {% endfor %}

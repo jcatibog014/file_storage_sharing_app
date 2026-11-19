@@ -48,6 +48,10 @@
   --sidebar-active: #4b2d77;
   --panel: #2e1a47;
 
+  /* Folder colours (files.FOLDER_COLORS): at least 3:1 on white. */
+  --f-violet: #7c3aed; --f-blue: #2563eb; --f-teal: #0d9488; --f-green: #16a34a; --f-yellow: #b98900;
+  --f-orange: #ea580c; --f-red: #dc2626; --f-pink: #db2777; --f-grey: #64748b;
+
   /* File types (icons), 4.5:1 on white. */
   --t-folder: #7c3aed;
   --t-image: #0f766e;
@@ -105,6 +109,8 @@
     --t-folder: #a78bfa; --t-image: #2dd4bf; --t-pdf: #f87171; --t-doc: #60a5fa; --t-sheet: #4ade80;
     --t-slides: #fb923c; --t-video: #f472b6; --t-audio: #e879f9; --t-text: #cbd5e1; --t-zip: #fbbf24;
     --t-code: #22d3ee; --t-other: #94a3b8;
+    --f-violet: #a78bfa; --f-blue: #60a5fa; --f-teal: #2dd4bf; --f-green: #4ade80; --f-yellow: #facc15;
+    --f-orange: #fb923c; --f-red: #f87171; --f-pink: #f472b6; --f-grey: #94a3b8;
   }
 }
 :root[data-theme="dark"] {
@@ -142,6 +148,8 @@
   --t-folder: #a78bfa; --t-image: #2dd4bf; --t-pdf: #f87171; --t-doc: #60a5fa; --t-sheet: #4ade80;
   --t-slides: #fb923c; --t-video: #f472b6; --t-audio: #e879f9; --t-text: #cbd5e1; --t-zip: #fbbf24;
   --t-code: #22d3ee; --t-other: #94a3b8;
+  --f-violet: #a78bfa; --f-blue: #60a5fa; --f-teal: #2dd4bf; --f-green: #4ade80; --f-yellow: #facc15;
+  --f-orange: #fb923c; --f-red: #f87171; --f-pink: #f472b6; --f-grey: #94a3b8;
 }
 
 /* ---------- Base ---------- */
@@ -512,6 +520,11 @@ input[type="checkbox"].switch:disabled { opacity: 0.55; cursor: not-allowed; }
 .type-doc { color: var(--t-doc); } .type-sheet { color: var(--t-sheet); } .type-slides { color: var(--t-slides); }
 .type-video { color: var(--t-video); } .type-audio { color: var(--t-audio); } .type-text { color: var(--t-text); }
 .type-zip { color: var(--t-zip); } .type-code { color: var(--t-code); } .type-other { color: var(--t-other); }
+/* A folder's own colour: it only changes --t-folder, so the icon, its fill and the card follow. */
+.folder-violet { --t-folder: var(--f-violet); } .folder-blue { --t-folder: var(--f-blue); }
+.folder-teal { --t-folder: var(--f-teal); } .folder-green { --t-folder: var(--f-green); }
+.folder-yellow { --t-folder: var(--f-yellow); } .folder-orange { --t-folder: var(--f-orange); }
+.folder-red { --t-folder: var(--f-red); } .folder-pink { --t-folder: var(--f-pink); } .folder-grey { --t-folder: var(--f-grey); }
 .type-folder svg path:first-child { fill: color-mix(in srgb, var(--t-folder) 16%, transparent); }
 
 .folder-title { display: flex; align-items: center; gap: 0.625rem; min-width: 0; }
@@ -959,6 +972,8 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
   .page-head .head-actions > * { flex: 1 1 8rem; }  /* two to a row; they stack only when even that won't fit */
   .page-head .head-actions .button, .page-head .head-actions .upload-form { width: 100%; }
   .page-head .head-actions > .item-menu { flex: 0 0 auto; }
+  /* "New folder" is the left button here, so its panel opens from its left edge (not off the screen). */
+  .page-head .new-panel-form { left: 0; right: auto; }
   .list-tools { flex-wrap: nowrap; }
   .sort-form { min-width: 0; flex: 1; }
   .sort-form select { min-width: 0; flex: 1; padding-right: 1.5rem; }
@@ -1049,3 +1064,22 @@ html:not(.js) .upload-input { font-size: 0.8125rem; max-width: 14rem; }
   background: var(--text); color: var(--bg); font-size: 0.8125rem; font-weight: 600; line-height: 1.35;
   box-shadow: var(--shadow-lifted); pointer-events: none;
 }
+
+/* ---------- Folder colours: round swatches (New folder panel and the ⋯ menu) ---------- */
+.swatch-field { border: 0; padding: 0; margin: 0; min-width: 0; }
+.swatch-field .field-label { display: block; margin-bottom: 0.5rem; padding: 0; }
+.swatch-row { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.swatch {
+  position: relative; display: inline-block; flex: none; width: 1.5rem; height: 1.5rem; padding: 0; border: 0;
+  border-radius: 50%; background: var(--t-folder); cursor: pointer;
+}
+.swatch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+/* The chosen one: a ring in its own colour, with a gap. */
+.swatch:has(input:checked), .swatch.is-on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--t-folder); }
+.swatch:has(input:focus-visible), .swatch:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
+.swatch:hover { transform: scale(1.1); }
+.menu-colors { padding: 0.375rem 0.625rem 0.5rem; }
+.menu-label { display: block; margin-bottom: 0.5rem; color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+.menu-items .menu-colors .swatch-row { flex-wrap: nowrap; }
+.menu-items .menu-colors .swatch { display: inline-block; width: 1.5rem; padding: 0; border-radius: 50%; background: var(--t-folder); }
+.menu-items .menu-colors .swatch:hover { background: var(--t-folder); }

@@ -32,12 +32,17 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 
 - **Upload** files with the Upload button, or drag them onto the page. Each file can be up to 100 MB.
 - Make **folders**, and folders inside folders. **Rename** and **move** things.
+- Give a folder a **color**: choose one when you make it, or change it later in its ⋯ menu.
 - See your files as a **list** or a **grid** with small pictures. Sort them by name, date or size.
 - **Download** a file, or a whole folder as one ZIP file.
 
 ![My Drive](docs/screenshots/my-drive.png)
 
 ![Pictures in a grid](docs/screenshots/photos-grid.png)
+
+![Choose a color for a new folder](docs/screenshots/new-folder.png)
+
+![Change a folder's color](docs/screenshots/folder-color.png)
 
 ### Look Inside Files
 

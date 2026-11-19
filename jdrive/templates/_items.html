@@ -12,7 +12,21 @@
   </form>
 {% endmacro %}
 
-{% macro type_icon(item, size=20) %}<span class="type-icon type-{{ kind_of(item) }}">{{ icon(icon_name(item), size) }}</span>{% endmacro %}
+{% macro type_icon(item, size=20) %}<span class="type-icon {{ type_class(item) }}">{{ icon(icon_name(item), size) }}</span>{% endmacro %}
+
+{# The colour choices for a folder. In a form, they are radio buttons (the New folder panel). #}
+{% macro color_choices(chosen='violet') %}
+  <fieldset class="swatch-field">
+    <legend class="field-label">Color</legend>
+    <div class="swatch-row">
+      {% for key, label in FOLDER_COLORS.items() %}
+        <label class="swatch folder-{{ key }}" title="{{ label }}">
+          <input type="radio" name="color" value="{{ key }}"{% if key == chosen %} checked{% endif %}><span class="visually-hidden">{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+{% endmacro %}
 
 {# The ⋯ menu. role is the person's role on the item; each entry shows only if the role allows it. #}
 {% macro item_menu(item, role, show_download=True, is_starred=None) %}
@@ -30,6 +44,19 @@
       {% endif %}
       {% if role_allows(role, 'rename') %}<a href="{{ url_for('drive.rename', item_id=item.id) }}">{{ icon('pencil', 16) }} Rename</a>{% endif %}
       {% if role_allows(role, 'move') %}<a href="{{ url_for('drive.move', item_id=item.id) }}">{{ icon('move', 16) }} Move</a>{% endif %}
+      {% if item.is_folder and role_allows(role, 'color') %}
+        <form method="post" action="{{ url_for('drive.color', item_id=item.id) }}" class="menu-colors">
+          {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <span class="menu-label">Folder color</span>
+          <div class="swatch-row">
+            {% for key, label in FOLDER_COLORS.items() %}
+              {% set on = (item.color or 'violet') == key %}
+              <button type="submit" name="color" value="{{ key }}" class="swatch folder-{{ key }}{% if on %} is-on{% endif %}"
+                      title="{{ label }}" aria-pressed="{{ 'true' if on else 'false' }}"><span class="visually-hidden">{{ label }}</span></button>
+            {% endfor %}
+          </div>
+        </form>
+      {% endif %}
       {% if role_allows(role, 'trash') %}
         <hr>
         <form method="post" action="{{ url_for('drive.trash', item_id=item.id) }}">
@@ -73,7 +100,7 @@
 {# A card's picture: the type icon, covered by a thumbnail for pictures (app.js removes a
    thumbnail that can't be made). thumb=False for things that can't be opened (the Trash). #}
 {% macro card_art(item, thumb=True) %}
-  <span class="file-card-art type-{{ kind_of(item) }}">
+  <span class="file-card-art {{ type_class(item) }}">
     {{ icon(icon_name(item), 40) }}
     {% if thumb and kind_of(item) == 'image' and preview_kind(item) == 'image' %}<img src="{{ url_for('find.thumb', item_id=item.id) }}" alt="" loading="lazy" data-thumb>{% endif %}
   </span>

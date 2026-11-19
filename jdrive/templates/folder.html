@@ -2,7 +2,7 @@
 {% from "_icons.html" import icon %}
 {% from "_macros.html" import csrf %}
 {% from "_activity.html" import activity_lines with context %}
-{% from "_items.html" import item_list, item_grid, breadcrumbs, type_icon, star_button, view_toggle with context %}
+{% from "_items.html" import item_list, item_grid, breadcrumbs, type_icon, star_button, view_toggle, color_choices with context %}
 {% set title = folder.name if folder else 'My Drive' %}
 {% set role = access.role if access else 'owner' %}
 {% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
@@ -31,6 +31,7 @@
             <input type="hidden" name="parent_id" value="{{ folder.id if folder else '' }}">
             <label class="field"><span class="field-label">Folder name</span>
               <input type="text" name="name" required maxlength="255" value="New folder" data-select-on-open></label>
+            {{ color_choices() }}
             <div class="form-actions"><button class="button" type="submit">Make folder</button></div>
           </form>
         </details>

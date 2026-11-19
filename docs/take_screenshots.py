@@ -37,6 +37,8 @@ PAGES = [
     ("check-email.png", "signup", "light", DESKTOP),
     ("demo-start.png", "/drive", "light", DESKTOP),  # the welcome toast, right after Try demo
     ("my-drive.png", "/drive?view=list", "light", DESKTOP),
+    ("new-folder.png", "/drive?view=grid#new-folder", "light", DESKTOP),  # the colours to choose from
+    ("folder-color.png", "/drive?view=grid#folder-color", "light", DESKTOP),  # a folder's ... menu
     ("photos-grid.png", "Photos > Baguio Trip?view=grid", "light", DESKTOP),
     ("picture.png", "Photos > Baguio Trip > Burnham Park.jpg", "light", DESKTOP),
     ("text-and-versions.png", "School > Thesis > Reading list.md", "light", DESKTOP),
@@ -106,6 +108,12 @@ def go(page, browser, where, theme, size):
         return visitor
     if where.startswith("/"):
         page.goto(f"{BASE}{where}{view}", wait_until="networkidle")  # keep ?view=list/grid
+        if anchor == "new-folder":
+            page.locator(".new-panel summary").click()
+            page.fill(".new-panel input[name=name]", "Trip Plans")
+            page.locator(".new-panel .swatch.folder-teal").click()
+        elif anchor == "folder-color":
+            page.locator(".file-card.is-folder .item-menu summary").first.click()
         return page
     visitor_view = where.endswith("@")
     share_page = "!share" in where
