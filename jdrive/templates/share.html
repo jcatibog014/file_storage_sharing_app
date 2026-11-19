@@ -99,6 +99,7 @@
       {% if link and not link.disabled_at %}
         <p class="link-state">{{ icon('link', 18) }} <span>
           {% if link.role == 'uploader' %}<strong>Anyone with the link can add files</strong> to this folder, without seeing what is in it.
+          {% elif link.role == 'editor' %}<strong>Anyone with the link can edit</strong> this folder: open it, add files and folders, rename, and move things to the Trash.
           {% else %}<strong>Anyone with the link</strong> can open {{ 'this folder and everything in it' if item.is_folder else 'this file' }}{% if not link.allow_download %}, but not download{% endif %}.{% endif %}
           No account needed.</span></p>
         {% if not link_open %}<p class="form-error">This link has run out. Choose a new end date below to use it again.</p>{% endif %}
@@ -124,7 +125,7 @@
                 {% for value, label in LINK_ROLES.items() %}
                   <label class="choice-card"><input type="radio" name="link_role" value="{{ value }}"{% if link.role == value %} checked{% endif %}>
                     <span><strong>{{ label }}</strong>
-                      <small>{{ 'Open the folder and what is in it.' if value == 'viewer' else "Add files to it (like a drop box), but not see what's there." }}</small></span></label>
+                      <small>{{ LINK_ROLE_HELP[value] }}</small></span></label>
                 {% endfor %}
               </fieldset>
             {% else %}

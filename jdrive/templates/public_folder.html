@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% from "_items.html" import type_icon with context %}
+{% from "_macros.html" import csrf %}
+{% from "_items.html" import type_icon, color_choices with context %}
+{% set can_edit = link.role == 'editor' %}
 {% block title %}{{ item.name }} - {{ APP_NAME }}{% endblock %}
 {% block body_class %}public-layout{% endblock %}
 {% block sidebar %}{% endblock %}
@@ -10,31 +12,82 @@
   <div class="page-head">
     <div>
       <h1 class="folder-title">{{ type_icon(item, 26) }}<span class="title-text">{{ item.name }}</span></h1>
-      <p class="lead">Shared by {{ item.owner.name }} with a link.{% if not link.allow_download %} Downloads are off.{% endif %}</p>
+      <p class="lead">Shared by {{ item.owner.name }} with a link.{% if can_edit %} You can add, rename and remove things here.{% endif %}{% if not link.allow_download %} Downloads are off.{% endif %}</p>
     </div>
     <div class="head-actions">
       {% block link_actions %}{% endblock %}
       {% if own_access %}<a class="button button-quiet" href="{{ item_url(item) }}">Open in JC Drive</a>{% endif %}
-      {% if link.allow_download and items %}<a class="button" href="{{ url_for('find.link_zip', token=token, item_id=item.id) }}">{{ icon('zip', 16) }} Download all</a>{% endif %}
+      {% if link.allow_download and items %}<a class="button{% if can_edit %} button-quiet{% endif %}" href="{{ url_for('find.link_zip', token=token, item_id=item.id) }}">{{ icon('zip', 16) }} Download all</a>{% endif %}
+      {% if can_edit %}
+        <details class="new-panel" data-popover>
+          <summary class="button button-quiet">{{ icon('folder-plus', 16) }} New folder</summary>
+          <form class="new-panel-form stack-tight" method="post" action="{{ url_for('public.new_folder', token=token) }}">
+            {{ csrf() }}
+            <input type="hidden" name="parent_id" value="{{ item.id }}">
+            <label class="field"><span class="field-label">Folder name</span>
+              <input type="text" name="name" required maxlength="255" value="New folder" data-select-on-open></label>
+            {{ color_choices() }}
+            <div class="form-actions"><button class="button" type="submit">Make folder</button></div>
+          </form>
+        </details>
+        {# Like My Drive: app.js sends each file straight to the bucket; without JavaScript it goes through us. #}
+        <form class="upload-form" method="post" action="{{ url_for('public.upload_form', token=token) }}" enctype="multipart/form-data"
+              data-upload data-api="{{ url_for('public.link', token=token) }}/api" data-parent="{{ item.id }}">
+          {{ csrf() }}
+          <input type="hidden" name="parent_id" value="{{ item.id }}">
+          <label class="button upload-button">
+            {{ icon('upload', 16) }} Upload
+            <input class="upload-input" id="upload-input" type="file" name="files" multiple data-upload-input>
+          </label>
+          <button class="button no-js-only" type="submit">Send files</button>
+        </form>
+      {% endif %}
     </div>
   </div>
-  {% if items %}
-    <div class="file-table-wrap">
-      <table class="file-table">
-        <thead><tr><th scope="col">Name</th><th scope="col" class="col-date">Last Changed</th><th scope="col" class="col-size">Size</th><th scope="col" class="col-menu"><span class="visually-hidden">Download</span></th></tr></thead>
-        <tbody>
-          {% for child in items %}
-            <tr>
-              <td class="col-name"><a class="item-link" href="{{ url_for('public.inside', token=token, item_id=child.id) }}">{{ type_icon(child) }}<span class="item-name">{{ child.name }}</span></a></td>
-              <td class="col-date">{{ child.updated_at|ago }}</td>
-              <td class="col-size">{{ '' if child.is_folder else child.size|filesize }}</td>
-              <td class="col-menu">{% if not child.is_folder and link.allow_download %}<a class="icon-button" href="{{ url_for('public.download', token=token, item_id=child.id) }}" title="Download {{ child.name }}"><span class="visually-hidden">Download {{ child.name }}</span>{{ icon('download') }}</a>{% endif %}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <div class="empty-state">{{ icon('folder', 56) }}<h2>This Folder Is Empty</h2></div>
-  {% endif %}
+  <div class="drop-zone"{% if can_edit %} data-drop-zone{% endif %}>
+    {% if items %}
+      <div class="file-table-wrap">
+        <table class="file-table">
+          <thead><tr><th scope="col">Name</th><th scope="col" class="col-date">Last Changed</th><th scope="col" class="col-size">Size</th><th scope="col" class="col-menu"><span class="visually-hidden">{{ 'Actions' if can_edit else 'Download' }}</span></th></tr></thead>
+          <tbody>
+            {% for child in items %}
+              <tr>
+                <td class="col-name"><a class="item-link" href="{{ url_for('public.inside', token=token, item_id=child.id) }}">{{ type_icon(child) }}<span class="item-name">{{ child.name }}</span></a></td>
+                <td class="col-date">{{ child.updated_at|ago }}</td>
+                <td class="col-size">{{ '' if child.is_folder else child.size|filesize }}</td>
+                <td class="col-menu">
+                  {% if can_edit %}
+                    <details class="item-menu" data-popover>
+                      <summary class="icon-button" title="More for {{ child.name }}"><span class="visually-hidden">More for {{ child.name }}</span>{{ icon('more') }}</summary>
+                      <div class="menu-items">
+                        {% if not child.is_folder and link.allow_download %}<a href="{{ url_for('public.download', token=token, item_id=child.id) }}">{{ icon('download', 16) }} Download</a>{% endif %}
+                        <a href="{{ url_for('public.rename', token=token, item_id=child.id) }}">{{ icon('pencil', 16) }} Rename</a>
+                        <hr>
+                        <form method="post" action="{{ url_for('public.trash', token=token, item_id=child.id) }}"
+                              data-confirm="Move {{ child.name }}{{ ' and everything in it' if child.is_folder }} to the Trash? Only the owner can bring it back." data-confirm-ok="Move to trash">
+                          {{ csrf() }}
+                          <button type="submit" class="danger">{{ icon('trash', 16) }} Move to trash</button>
+                        </form>
+                      </div>
+                    </details>
+                  {% elif not child.is_folder and link.allow_download %}
+                    <a class="icon-button" href="{{ url_for('public.download', token=token, item_id=child.id) }}" title="Download {{ child.name }}"><span class="visually-hidden">Download {{ child.name }}</span>{{ icon('download') }}</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">{{ icon('folder', 56) }}<h2>This Folder Is Empty</h2>
+        {% if can_edit %}<p>Drop files here, or press Upload.</p>{% endif %}</div>
+    {% endif %}
+    {% if can_edit and items %}
+      <label class="drop-more js-only" for="upload-input">{{ icon('upload', 22) }}
+        <span class="when-mouse">Drag and drop files here to upload, or <span class="drop-link">choose files</span></span>
+        <span class="when-touch">Tap to upload files</span></label>
+    {% endif %}
+    {% if can_edit %}<div class="drop-hint" aria-hidden="true">{{ icon('upload', 40) }} Drop to upload</div>{% endif %}
+  </div>
 {% endblock %}

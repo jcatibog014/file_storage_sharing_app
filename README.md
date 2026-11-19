@@ -77,6 +77,7 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 - Turn on a **link**: anyone with it can open the folder or file, without an account.
 - **Link settings:** an end date, a password, downloads on or off.
 - A **"Can upload" link** lets people send you files (like homework), without seeing what is in the folder.
+- A **"Can edit" link** lets people open the folder, add files and folders, rename, and move things to the Trash. Only you can delete for good, and you get a notification for new files and things moved to the Trash.
 - Make a new link at any time: the old one stops working.
 
 ![Link settings](docs/screenshots/link-settings.png)
@@ -84,6 +85,8 @@ shares and links. Nobody else sees it, and it is deleted after 24 hours.
 ![A visitor opens a link](docs/screenshots/visitor-folder.png)
 
 ![A visitor sends files](docs/screenshots/visitor-upload.png)
+
+![A visitor edits a folder](docs/screenshots/visitor-edit.png)
 
 ### Find Things
 
