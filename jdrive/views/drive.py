@@ -148,7 +148,8 @@ def new_folder():
     s = db.session()
     owner_id, parent = place(s, request.form.get("parent_id"), "new_folder")
     try:
-        folder = files.create_folder(s, g.user, owner_id, parent, request.form.get("name", ""), utcnow())
+        folder = files.create_folder(s, g.user, owner_id, parent, request.form.get("name", ""), utcnow(),
+                                     color=request.form.get("color"))
     except files.Problem as problem:
         flash(str(problem), "error")
         return redirect(item_url(parent))
@@ -156,6 +157,22 @@ def new_folder():
     s.commit()
     flash(f"Made the folder {folder.name}.")
     return redirect(item_url(parent))
+
+
+@bp.post("/items/<int:item_id>/color")
+@login_required
+def color(item_id):
+    """A folder's colour, from the swatches in its ... menu."""
+    s = db.session()
+    access = permissions.require(s, g.user, item_id, "color", kind=FOLDER)
+    try:
+        files.set_color(access.item, request.form.get("color"), utcnow())
+    except files.Problem as problem:
+        flash(str(problem), "error")
+    else:
+        s.commit()
+        flash(f"{access.item.name} is {files.FOLDER_COLORS[access.item.color or 'violet'].lower()} now.")
+    return back_to(parent_url(access.item))
 
 
 @bp.post("/upload")

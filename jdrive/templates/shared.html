@@ -30,7 +30,7 @@
           {% set sharer = share.invited_by or item.owner %}
           <li class="file-card{% if item.is_folder %} is-folder{% endif %}">
             <a class="file-card-link" href="{{ item_url(item) }}">
-              <span class="file-card-art type-{{ kind_of(item) }}">
+              <span class="file-card-art {{ type_class(item) }}">
                 {{ icon(icon_name(item), 40) }}
                 {% if preview_kind(item) == 'image' %}<img src="{{ url_for('find.thumb', item_id=item.id) }}" alt="" loading="lazy" data-thumb>{% endif %}
               </span>

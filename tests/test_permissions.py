@@ -11,8 +11,9 @@ from .conftest import CSRF, browser, get_item, make_user, new_folder, post, uplo
 def test_the_rule_table():
     table = {
         "viewer": {"view", "download"},
-        "editor": {"view", "download", "upload", "new_folder", "rename", "move", "new_version", "trash"},
-        "coowner": {"view", "download", "upload", "new_folder", "rename", "move", "new_version", "trash",
+        "editor": {"view", "download", "upload", "new_folder", "rename", "color", "move", "new_version",
+                   "trash"},
+        "coowner": {"view", "download", "upload", "new_folder", "rename", "color", "move", "new_version", "trash",
                     "share", "restore", "delete_version"},
         "owner": set(permissions.NEEDS),
     }

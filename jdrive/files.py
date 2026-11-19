@@ -162,9 +162,41 @@ def folder_size_and_count(s, folder_id):
 
 # ---------- Making things ----------
 
-def create_folder(s, user, owner_id, parent, name, moment):
+# The colours a folder can have, in the order they are offered. The first is the usual one.
+FOLDER_COLORS = {"violet": "Violet", "blue": "Blue", "teal": "Teal", "green": "Green", "yellow": "Yellow",
+                 "orange": "Orange", "red": "Red", "pink": "Pink", "grey": "Grey"}
+
+
+def clean_color(color):
+    """The colour to store: None for the usual violet (or nothing chosen)."""
+    color = (color or "").strip().lower()
+    if color not in FOLDER_COLORS:
+        if color:
+            raise Problem("Choose one of the folder colors.")
+        return None
+    return None if color == "violet" else color
+
+
+def set_color(item, color, moment):
+    if not item.is_folder:
+        raise Problem("Only folders have a color.")
+    item.color = clean_color(color)
+    item.updated_at = moment
+    return item
+
+
+def type_class(item):
+    """The icon's classes: "type-pdf", or "type-folder folder-blue" for a coloured folder."""
+    kind = kind_of(item)
+    if kind == "folder" and getattr(item, "color", None) in FOLDER_COLORS:
+        return f"type-folder folder-{item.color}"
+    return f"type-{kind}"
+
+
+def create_folder(s, user, owner_id, parent, name, moment, color=None):
     """A new folder in parent (None = the top of owner_id's My Drive)."""
     name = clean_name(name)
+    color = clean_color(color)
     if parent is not None:
         if not parent.is_folder:
             raise Problem("Folders can only go inside folders.")
@@ -172,7 +204,7 @@ def create_folder(s, user, owner_id, parent, name, moment):
             raise Problem(f"Folders can go at most {tree.MAX_DEPTH} levels deep.")
     parent_id = parent.id if parent else None
     folder = Item(kind=FOLDER, name=unique_name(s, owner_id, parent_id, name), parent_id=parent_id,
-                  owner_id=owner_id, created_by_id=user.id, created_at=moment, updated_at=moment)
+                  owner_id=owner_id, created_by_id=user.id, created_at=moment, updated_at=moment, color=color)
     s.add(folder)
     s.flush()
     return folder
@@ -446,4 +478,5 @@ def expire_uploads(s, moment):
 
 def init_app(app):
     app.jinja_env.globals.update(kind_of=kind_of, icon_name=icon_name, KIND_NAMES=KIND_NAMES,
+                                 type_class=type_class, FOLDER_COLORS=FOLDER_COLORS,
                                  MAX_VERSIONS=MAX_VERSIONS, TRASH_DAYS=TRASH_DAYS)

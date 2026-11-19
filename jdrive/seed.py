@@ -34,9 +34,9 @@ def _person(s, name, moment, tag):
     return user
 
 
-def _folder(s, owner, parent, name, by, at):
+def _folder(s, owner, parent, name, by, at, color=None):
     folder = Item(kind=FOLDER, name=name, parent_id=parent.id if parent else None, owner_id=owner.id,
-                  created_by_id=by.id, created_at=at, updated_at=at)
+                  created_by_id=by.id, created_at=at, updated_at=at, color=color)
     s.add(folder)
     s.flush()
     activity.log(s, by, folder, "folder_made", at)
@@ -81,20 +81,20 @@ def build(s, moment):
         return moment - timedelta(**delta)
 
     # ---------- Janelle's My Drive ----------
-    photos = _folder(s, me, None, "Photos", me, ago(days=40))
-    baguio = _folder(s, me, photos, "Baguio Trip", me, ago(days=12))
+    photos = _folder(s, me, None, "Photos", me, ago(days=40), color="orange")
+    baguio = _folder(s, me, photos, "Baguio Trip", me, ago(days=12), color="teal")
     for number, sample in enumerate(("baguio-1", "baguio-2", "baguio-3", "baguio-4")):
         _file(s, me, baguio, sample, me, ago(days=12, hours=-number))
     sunset = _file(s, me, photos, "sunset", me, ago(days=30))
-    school = _folder(s, me, None, "School", me, ago(days=50))
+    school = _folder(s, me, None, "School", me, ago(days=50), color="green")
     thesis = _folder(s, me, school, "Thesis", me, ago(days=45))
     draft = _file(s, me, thesis, None, me, ago(days=44), versions=[
         ("thesis-1", me, ago(days=44)), ("thesis-2", carlo, ago(days=20)), ("thesis-3", me, ago(hours=5))])
     reading = _file(s, me, thesis, None, me, ago(days=40), versions=[
         ("reading-1", me, ago(days=40)), ("reading", carlo, ago(days=2))])
     _file(s, me, thesis, "notes", carlo, ago(days=3))
-    homework = _folder(s, me, school, "Homework Box", me, ago(days=9))
-    work = _folder(s, me, None, "Work", me, ago(days=25))
+    homework = _folder(s, me, school, "Homework Box", me, ago(days=9), color="yellow")
+    work = _folder(s, me, None, "Work", me, ago(days=25), color="blue")
     _file(s, me, work, "budget", me, ago(days=8))
     plan = _file(s, me, work, "project-plan", me, ago(days=6))
     resume = _file(s, me, None, "resume", me, ago(days=15))
@@ -137,7 +137,7 @@ def build(s, moment):
     notify.send(s, me.id, f"Someone sent {sent.name} into Homework Box.", f"/folders/{homework.id}", ago(days=1))
 
     # ---------- Shared with Janelle ----------
-    recipes = _folder(s, ana, None, "Family Recipes", ana, ago(days=90))
+    recipes = _folder(s, ana, None, "Family Recipes", ana, ago(days=90), color="red")
     _file(s, ana, recipes, "adobo", ana, ago(days=90))
     _file(s, ana, recipes, "sinigang", ana, ago(days=80))
     _file(s, ana, recipes, "flan", ana, ago(days=70))
