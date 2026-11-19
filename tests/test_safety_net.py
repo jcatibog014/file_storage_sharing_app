@@ -134,12 +134,17 @@ def test_download_and_restore_an_old_version(app, ctx):
     link = client.get(f"/files/{file_id}/versions/{first.id}/download").headers["Location"]
     got = client.get(link)
     assert got.data == b"first draft" and 'essay (version 1).txt' in got.headers["Content-Disposition"]
-    post(client, f"/files/{file_id}/versions/{first.id}/restore")
+    response = post(client, f"/files/{file_id}/versions/{first.id}/restore", follow_redirects=True)
+    assert "Version 1 is the current version now." in text(response)
+    # Version 1 just gets the Current tag: no version is added, nothing is copied.
     versions = ctx.scalars(select(FileVersion).where(FileVersion.item_id == file_id)
                            .order_by(FileVersion.number)).all()
-    assert [v.number for v in versions] == [1, 2, 3]
-    assert versions[2].blob_id == versions[0].blob_id  # nothing copied
+    assert [v.number for v in versions] == [1, 2]
     assert blob_count(app) == 2
+    item = get_item(app, file_id)
+    assert item.current_version_id == first.id and item.size == len(b"first draft")
+    download = client.get(client.get(f"/files/{file_id}/download").headers["Location"])
+    assert download.data == b"first draft"
 
 
 def test_only_the_newest_ten_versions_are_kept(app):
@@ -165,10 +170,11 @@ def test_deleting_a_version_needs_a_coowner_and_not_the_current_one(app, ctx):
     ben = browser(app, ben_id)
     assert post(ben, f"/files/{file_id}/versions/{old.id}/delete").status_code == 403
     assert post(ben, f"/files/{file_id}/versions/{old.id}/restore").status_code == 302  # Editors can restore
-    newest = ctx.scalar(select(FileVersion).where(FileVersion.item_id == file_id).order_by(FileVersion.number.desc()))
-    assert newest.number == 3
-    response = post(maria, f"/files/{file_id}/versions/{newest.id}/delete", follow_redirects=True)
+    # Version 1 is current now, so it can't be deleted; version 2 (the newest, not current) can.
+    response = post(maria, f"/files/{file_id}/versions/{old.id}/delete", follow_redirects=True)
     assert "current version" in text(response)
+    response = post(maria, f"/files/{file_id}/versions/{_second.id}/delete", follow_redirects=True)
+    assert "Deleted version 2." in text(response)
 
 
 def test_a_version_of_another_file_is_404(app, ctx):

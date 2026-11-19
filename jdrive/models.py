@@ -138,6 +138,12 @@ class Item(Base):
     trashed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     # Folders only: a colour from files.FOLDER_COLORS. None = the usual violet.
     color: Mapped[str | None] = mapped_column(String(12))
+    # Files only: the version in use, when an older one was made current again.
+    # None = the newest (a new upload always makes the newest current).
+    # use_alter: items and file_versions point at each other.
+    current_version_id: Mapped[int | None] = mapped_column(
+        ForeignKey("file_versions.id", ondelete="SET NULL", use_alter=True, name="fk_items_current_version"),
+        index=True)
 
     owner: Mapped[User] = relationship(foreign_keys=[owner_id])
     created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])
@@ -149,7 +155,8 @@ class Item(Base):
 
 
 class FileVersion(Base):
-    """One version of a file. The newest (highest number) is the current one."""
+    """One version of a file. The current one is the item's current_version_id,
+    or the newest (highest number) when that is empty."""
     __tablename__ = "file_versions"
 
     id: Mapped[int] = mapped_column(primary_key=True)

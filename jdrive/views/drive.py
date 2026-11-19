@@ -409,7 +409,7 @@ def restore_version(item_id, version_id):
     activity.log(s, g.user, access.item, "version_restored", utcnow(), detail=f"version {version.number}")
     s.commit()
     files.sweep_after_commit(s)
-    flash(f"Version {version.number} is the current one again.")
+    flash(f"Version {version.number} is the current version now.")
     return redirect(url_for("drive.file", item_id=item_id))
 
 

@@ -132,7 +132,9 @@ class TooBig(Exception):
 
 def zip_plan(s, folder):
     """[(name inside the ZIP, blob key)] for every file in the folder, at any depth,
-    leaving out anything in the Trash. Raises TooBig past the limits."""
+    leaving out anything in the Trash. Raises TooBig past the limits.
+    Each file is its current version (the one made current, or the newest)."""
+    from .files import current_version
     ids = tree.descendant_ids(s, folder.id, include_self=False)
     items = {item.id: item for item in s.scalars(select(Item).where(Item.id.in_(ids)))} if ids else {}
     items[folder.id] = folder
@@ -147,8 +149,7 @@ def zip_plan(s, folder):
             step = items.get(step.parent_id)
         if hidden or step is None:
             continue
-        version = s.scalar(select(FileVersion).where(FileVersion.item_id == item.id)
-                           .order_by(FileVersion.number.desc()).limit(1))
+        version = current_version(s, item)
         if version is None:
             continue
         total += version.size
