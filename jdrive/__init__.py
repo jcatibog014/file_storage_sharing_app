@@ -63,6 +63,9 @@ def create_app(test_config=None):
         # Cookie safety: not readable by JavaScript (Flask's default), not sent
         # with forms from other sites, and only over HTTPS on the live site.
         SESSION_COOKIE_SAMESITE="Lax",
+        # Our own name, not Flask's "session": cookies ignore the port, so another
+        # Flask app on 127.0.0.1 would otherwise overwrite this one and log you out.
+        SESSION_COOKIE_NAME="jcdrive_session",
         SESSION_COOKIE_SECURE=on_render,
         PERMANENT_SESSION_LIFETIME=timedelta(days=30),
         # The biggest thing Flask itself takes: one file in the no-JavaScript upload
